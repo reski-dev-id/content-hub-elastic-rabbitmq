@@ -32,6 +32,50 @@ func (r *productRepo) Create(p *entity.Product) error {
 	return err
 }
 
+func (r *productRepo) CreateWithOutbox(p *entity.Product, e *entity.OutboxEvent) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	res, err := tx.Exec(`
+		INSERT INTO products (category_id, title, slug, description, price, status)
+		VALUES (?, ?, ?, ?, ?, ?)`,
+		p.CategoryID,
+		p.Title,
+		p.Slug,
+		p.Description,
+		p.Price,
+		p.Status,
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	productID, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`
+		INSERT INTO outbox_events (aggregate_type, aggregate_id, event_type, payload, status)
+		VALUES (?, ?, ?, ?, ?)`,
+		e.AggregateType,
+		productID,
+		e.EventType,
+		e.Payload,
+		"pending",
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func (r *productRepo) FindAll(page, limit int, categoryID *uint64) ([]entity.Product, error) {
 	var products []entity.Product
 
