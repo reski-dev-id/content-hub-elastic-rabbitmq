@@ -32,7 +32,16 @@ func (h *ProductHandler) Create(c *gin.Context) {
 }
 
 func (h *ProductHandler) GetAll(c *gin.Context) {
-	data, err := h.uc.GetAll()
+	page := parseIntDefault(c.Query("page"), 1)
+	limit := parseIntDefault(c.Query("limit"), 10)
+
+	var categoryID *uint64
+	if cid := c.Query("category_id"); cid != "" {
+		val := parseUint(cid)
+		categoryID = &val
+	}
+
+	data, err := h.uc.GetAll(page, limit, categoryID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
