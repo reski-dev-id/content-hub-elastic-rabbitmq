@@ -18,6 +18,7 @@ func NewProductHandler(uc usecase.ProductUsecase) *ProductHandler {
 
 func (h *ProductHandler) Create(c *gin.Context) {
 	var req entity.Product
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
@@ -29,6 +30,37 @@ func (h *ProductHandler) Create(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, "created")
+}
+
+func (h *ProductHandler) GetByID(c *gin.Context) {
+	id := c.Param("id")
+
+	data, err := h.uc.GetByID(parseUint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, data)
+}
+
+func (h *ProductHandler) Update(c *gin.Context) {
+	id := c.Param("id")
+
+	var req entity.Product
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	req.ID = parseUint(id)
+
+	if err := h.uc.Update(&req); err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, "updated")
 }
 
 func (h *ProductHandler) GetAll(c *gin.Context) {

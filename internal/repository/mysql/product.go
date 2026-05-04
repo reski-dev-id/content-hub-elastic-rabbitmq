@@ -16,10 +16,19 @@ func NewProductRepository(db *sqlx.DB) repository.ProductRepository {
 }
 
 func (r *productRepo) Create(p *entity.Product) error {
-	query := `INSERT INTO products (category_id, title, price, status)
-			  VALUES (?, ?, ?, ?)`
+	query := `
+	INSERT INTO products (category_id, title, slug, description, price, status)
+	VALUES (?, ?, ?, ?, ?, ?)`
 
-	_, err := r.db.Exec(query, p.CategoryID, p.Title, p.Price, p.Status)
+	_, err := r.db.Exec(query,
+		p.CategoryID,
+		p.Title,
+		p.Slug,
+		p.Description,
+		p.Price,
+		p.Status,
+	)
+
 	return err
 }
 
@@ -52,48 +61,6 @@ func (r *productRepo) FindByID(id uint64) (*entity.Product, error) {
 	}
 
 	return &product, nil
-}
-
-func (r *productRepo) CreateWithOutbox(p *entity.Product, e *entity.OutboxEvent) error {
-	tx, err := r.db.Beginx()
-	if err != nil {
-		return err
-	}
-
-	// insert product
-	res, err := tx.Exec(`
-		INSERT INTO products (category_id, title, slug, description, price, status)
-		VALUES (?, ?, ?, ?, ?, ?)`,
-		p.CategoryID,
-		p.Title,
-		p.Slug,
-		p.Description,
-		p.Price,
-		p.Status,
-	)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	productID, _ := res.LastInsertId()
-
-	// insert outbox
-	_, err = tx.Exec(`
-		INSERT INTO outbox_events (aggregate_type, aggregate_id, event_type, payload, status)
-		VALUES (?, ?, ?, ?, ?)`,
-		e.AggregateType,
-		productID,
-		e.EventType,
-		e.Payload,
-		"pending",
-	)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit()
 }
 
 func (r *productRepo) Update(p *entity.Product) error {

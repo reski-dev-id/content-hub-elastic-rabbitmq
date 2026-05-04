@@ -4,7 +4,6 @@ import (
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/domain/repository"
 	domain "content-hub/internal/domain/usecase"
-	"encoding/json"
 )
 
 type productUsecase struct {
