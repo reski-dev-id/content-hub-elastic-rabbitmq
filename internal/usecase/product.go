@@ -15,7 +15,16 @@ func NewProductUsecase(r repository.ProductRepository) domain.ProductUsecase {
 }
 
 func (u *productUsecase) Create(p *entity.Product) error {
-	return u.repo.Create(p)
+	payloadBytes, _ := json.Marshal(p)
+
+	event := &entity.OutboxEvent{
+		AggregateType: "product",
+		EventType:     "product_created",
+		Payload:       string(payloadBytes),
+		Status:        "pending",
+	}
+
+	return u.repo.CreateWithOutbox(p, event)
 }
 
 func (u *productUsecase) GetAll(page, limit int, categoryID *uint64) ([]entity.Product, error) {
