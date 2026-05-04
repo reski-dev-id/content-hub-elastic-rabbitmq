@@ -13,6 +13,8 @@ func NewRouter(ph *handler.ProductHandler) *gin.Engine {
 	{
 		v1.POST("/products", ph.Create)
 		v1.GET("/products", ph.GetAll)
+		v1.GET("/products/:id", ph.GetByID)
+		v1.PUT("/products/:id", ph.Update)
 	}
 
 	return r

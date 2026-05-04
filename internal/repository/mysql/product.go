@@ -16,15 +16,68 @@ func NewProductRepository(db *sqlx.DB) repository.ProductRepository {
 }
 
 func (r *productRepo) Create(p *entity.Product) error {
-	query := `INSERT INTO products (category_id, title, price, status)
-			  VALUES (?, ?, ?, ?)`
+	query := `
+	INSERT INTO products (category_id, title, slug, description, price, status)
+	VALUES (?, ?, ?, ?, ?, ?)`
 
-	_, err := r.db.Exec(query, p.CategoryID, p.Title, p.Price, p.Status)
+	_, err := r.db.Exec(query,
+		p.CategoryID,
+		p.Title,
+		p.Slug,
+		p.Description,
+		p.Price,
+		p.Status,
+	)
+
 	return err
 }
 
-func (r *productRepo) FindAll() ([]entity.Product, error) {
+func (r *productRepo) FindAll(page, limit int, categoryID *uint64) ([]entity.Product, error) {
 	var products []entity.Product
-	err := r.db.Select(&products, "SELECT * FROM products")
+
+	offset := (page - 1) * limit
+
+	query := "SELECT * FROM products WHERE 1=1"
+	args := []interface{}{}
+
+	if categoryID != nil {
+		query += " AND category_id = ?"
+		args = append(args, *categoryID)
+	}
+
+	query += " ORDER BY id DESC LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	err := r.db.Select(&products, query, args...)
 	return products, err
+}
+
+func (r *productRepo) FindByID(id uint64) (*entity.Product, error) {
+	var product entity.Product
+
+	err := r.db.Get(&product, "SELECT * FROM products WHERE id = ?", id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &product, nil
+}
+
+func (r *productRepo) Update(p *entity.Product) error {
+	query := `
+	UPDATE products
+	SET category_id=?, title=?, slug=?, description=?, price=?, status=?
+	WHERE id=?`
+
+	_, err := r.db.Exec(query,
+		p.CategoryID,
+		p.Title,
+		p.Slug,
+		p.Description,
+		p.Price,
+		p.Status,
+		p.ID,
+	)
+
+	return err
 }
