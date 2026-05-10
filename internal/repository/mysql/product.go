@@ -173,3 +173,54 @@ func (r *productRepo) DeleteWithOutbox(id uint64, e *entity.OutboxEvent) error {
 
 	return tx.Commit()
 }
+
+func (r *productRepo) UpdateWithOutbox(
+	p *entity.Product,
+	e *entity.OutboxEvent,
+) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+		UPDATE products
+		SET category_id=?, title=?, slug=?, description=?, price=?, status=?
+		WHERE id=?`,
+		p.CategoryID,
+		p.Title,
+		p.Slug,
+		p.Description,
+		p.Price,
+		p.Status,
+		p.ID,
+	)
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`
+		INSERT INTO outbox_events (
+			aggregate_type,
+			aggregate_id,
+			event_type,
+			payload,
+			status
+		)
+		VALUES (?, ?, ?, ?, ?)`,
+		e.AggregateType,
+		p.ID,
+		e.EventType,
+		e.Payload,
+		"pending",
+	)
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}

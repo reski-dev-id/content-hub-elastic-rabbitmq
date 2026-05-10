@@ -39,7 +39,17 @@ func (u *productUsecase) GetByID(id uint64) (*entity.Product, error) {
 }
 
 func (u *productUsecase) Update(p *entity.Product) error {
-	return u.repo.Update(p)
+	payloadBytes, _ := json.Marshal(p)
+
+	event := &entity.OutboxEvent{
+		AggregateType: "product",
+		AggregateID:   p.ID,
+		EventType:     "product_updated",
+		Payload:       string(payloadBytes),
+		Status:        "pending",
+	}
+
+	return u.repo.UpdateWithOutbox(p, event)
 }
 
 func (u *productUsecase) Delete(id uint64) error {
