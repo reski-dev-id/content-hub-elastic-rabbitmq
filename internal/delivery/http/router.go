@@ -15,6 +15,7 @@ func NewRouter(ph *handler.ProductHandler) *gin.Engine {
 		v1.GET("/products", ph.GetAll)
 		v1.GET("/products/:id", ph.GetByID)
 		v1.PUT("/products/:id", ph.Update)
+		v1.DELETE("/products/:id", ph.Delete)
 	}
 
 	return r

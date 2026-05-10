@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/domain/repository"
@@ -39,4 +40,18 @@ func (u *productUsecase) GetByID(id uint64) (*entity.Product, error) {
 
 func (u *productUsecase) Update(p *entity.Product) error {
 	return u.repo.Update(p)
+}
+
+func (u *productUsecase) Delete(id uint64) error {
+	payload := fmt.Sprintf(`{"id": %d}`, id)
+
+	event := &entity.OutboxEvent{
+		AggregateType: "product",
+		AggregateID:   id,
+		EventType:     "product_deleted",
+		Payload:       payload,
+		Status:        "pending",
+	}
+
+	return u.repo.DeleteWithOutbox(id, event)
 }
