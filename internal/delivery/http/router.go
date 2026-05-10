@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(ph *handler.ProductHandler) *gin.Engine {
+func NewRouter(ph *handler.ProductHandler, nh *handler.NewsHandler) *gin.Engine {
 	r := gin.Default()
 
 	v1 := r.Group("/v1")
@@ -16,6 +16,12 @@ func NewRouter(ph *handler.ProductHandler) *gin.Engine {
 		v1.GET("/products/:id", ph.GetByID)
 		v1.PUT("/products/:id", ph.Update)
 		v1.DELETE("/products/:id", ph.Delete)
+
+		v1.POST("/news", nh.Create)
+		v1.GET("/news", nh.GetAll)
+		v1.GET("/news/:id", nh.GetByID)
+		v1.PUT("/news/:id", nh.Update)
+		v1.DELETE("/news/:id", nh.Delete)
 	}
 
 	return r

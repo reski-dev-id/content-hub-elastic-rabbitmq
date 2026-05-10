@@ -3,6 +3,7 @@ package mysql
 import (
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/domain/repository"
+	"encoding/json"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -32,14 +33,24 @@ func (r *productRepo) Create(p *entity.Product) error {
 	return err
 }
 
-func (r *productRepo) CreateWithOutbox(p *entity.Product, e *entity.OutboxEvent) error {
+func (r *productRepo) CreateWithOutbox(
+	p *entity.Product,
+	e *entity.OutboxEvent,
+) error {
 	tx, err := r.db.Beginx()
 	if err != nil {
 		return err
 	}
 
 	res, err := tx.Exec(`
-		INSERT INTO products (category_id, title, slug, description, price, status)
+		INSERT INTO products (
+			category_id,
+			title,
+			slug,
+			description,
+			price,
+			status
+		)
 		VALUES (?, ?, ?, ?, ?, ?)`,
 		p.CategoryID,
 		p.Title,
@@ -48,6 +59,7 @@ func (r *productRepo) CreateWithOutbox(p *entity.Product, e *entity.OutboxEvent)
 		p.Price,
 		p.Status,
 	)
+
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -59,15 +71,26 @@ func (r *productRepo) CreateWithOutbox(p *entity.Product, e *entity.OutboxEvent)
 		return err
 	}
 
+	p.ID = uint64(productID)
+
+	payloadBytes, _ := json.Marshal(p)
+
 	_, err = tx.Exec(`
-		INSERT INTO outbox_events (aggregate_type, aggregate_id, event_type, payload, status)
+		INSERT INTO outbox_events (
+			aggregate_type,
+			aggregate_id,
+			event_type,
+			payload,
+			status
+		)
 		VALUES (?, ?, ?, ?, ?)`,
 		e.AggregateType,
 		productID,
 		e.EventType,
-		e.Payload,
+		string(payloadBytes),
 		"pending",
 	)
+
 	if err != nil {
 		tx.Rollback()
 		return err
