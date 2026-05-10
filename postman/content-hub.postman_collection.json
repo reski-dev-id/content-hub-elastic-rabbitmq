@@ -47,7 +47,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"category_id\": 1,\n    \"title\": \"MacBook Pro M4\",\n    \"slug\": \"macbook-pro-m4\",\n    \"description\": \"Laptop Apple terbaru dengan chip M4\",\n    \"price\": 35000000,\n    \"status\": \"active\"\n}",
+              "raw": "{\n    \"category_id\": 1,\n    \"title\": \"PlayStation 5 Pro\",\n    \"slug\": \"playstation-5-pro\",\n    \"description\": \"Console gaming terbaru dari Sony\",\n    \"price\": 14500000,\n    \"status\": \"active\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -112,24 +112,285 @@
         {
           "name": "Create",
           "request": {
-            "method": "GET",
-            "header": []
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"category_id\": 6,\n    \"title\": \"OpenAI Umumkan GPT Terbaru\",\n    \"slug\": \"openai-umumkan-gpt-terbaru\",\n    \"content\": \"Model terbaru meningkatkan reasoning dan speed.\",\n    \"author\": \"Reski\",\n    \"status\": \"published\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/v1/news",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "v1",
+                "news"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Update",
           "request": {
-            "method": "GET",
-            "header": []
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"category_id\": 6,\n    \"title\": \"OpenAI Rilis GPT Baru\",\n    \"slug\": \"openai-rilis-gpt-baru\",\n    \"content\": \"Update terbaru GPT dengan reasoning lebih baik.\",\n    \"author\": \"Reski Dev\",\n    \"status\": \"published\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/v1/news/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "v1",
+                "news",
+                "1"
+              ]
+            }
           },
           "response": []
         },
         {
           "name": "Delete",
           "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/v1/news/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "v1",
+                "news",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Elastic-Search",
+      "item": [
+        {
+          "name": "ping",
+          "request": {
             "method": "GET",
-            "header": []
+            "header": [],
+            "url": {
+              "raw": "http://localhost:9200",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9200"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Indexing-Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"mappings\": {\n      \"properties\": {\n        \"id\":          { \"type\": \"long\" },\n        \"title\":       { \"type\": \"text\" },\n        \"description\": { \"type\": \"text\" },\n        \"category_id\": { \"type\": \"long\" },\n        \"price\":       { \"type\": \"float\" },\n        \"status\":      { \"type\": \"keyword\" }\n      }\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "localhost:9200/products",
+              "host": [
+                "localhost"
+              ],
+              "port": "9200",
+              "path": [
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Indexing-News",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"mappings\": {\n      \"properties\": {\n        \"id\":           { \"type\": \"long\" },\n        \"title\":        { \"type\": \"text\" },\n        \"content\":      { \"type\": \"text\" },\n        \"category_id\":  { \"type\": \"long\" },\n        \"author\":       { \"type\": \"keyword\" },\n        \"status\":       { \"type\": \"keyword\" }\n      }\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "localhost:9200/news",
+              "host": [
+                "localhost"
+              ],
+              "port": "9200",
+              "path": [
+                "news"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "search-product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:9200/products/_search?pretty",
+              "host": [
+                "localhost"
+              ],
+              "port": "9200",
+              "path": [
+                "products",
+                "_search"
+              ],
+              "query": [
+                {
+                  "key": "pretty",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "search-news",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:9200/news/_search?pretty",
+              "host": [
+                "localhost"
+              ],
+              "port": "9200",
+              "path": [
+                "news",
+                "_search"
+              ],
+              "query": [
+                {
+                  "key": "pretty",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "search-product-api",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/v1/search?q=samsung&type=product",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "v1",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "samsung"
+                },
+                {
+                  "key": "type",
+                  "value": "product"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "search-news-api",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/v1/search?q=openai&type=news",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "v1",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "openai"
+                },
+                {
+                  "key": "type",
+                  "value": "news"
+                }
+              ]
+            }
           },
           "response": []
         }
