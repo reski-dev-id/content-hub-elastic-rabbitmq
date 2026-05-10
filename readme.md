@@ -1,7 +1,7 @@
 # Content Hub
 
 Katalog Produk & Berita dengan full-text search.
-Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunakan **Clean Architecture** dan **Dependency Injection**.
+Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunakan **Clean Architecture**.
 
 ---
 
@@ -9,12 +9,12 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunaka
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Go 1.22+ |
+| Language | Go 1.25.1 |
 | HTTP Framework | Gin |
 | Database | MySQL 8.0 + sqlx |
 | Message Broker | RabbitMQ 3.x (amqp091-go) |
 | Search Engine | Elasticsearch 8.x |
-| DI Container | Wire (google/wire) |
+| Dependency Injection | Manual Constructor Injection |
 | Containerization | Docker + Docker Compose |
 
 ---
@@ -42,7 +42,6 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunaka
 - Tiap layer hanya boleh depend ke layer di bawahnya
 - Domain layer tidak boleh import package luar (pure Go)
 - Dependency ditanamkan via interface, bukan concrete struct
-- Wire mengelola seluruh dependency graph di `cmd/`
 
 ---
 
@@ -53,13 +52,9 @@ content-hub/
 │
 ├── cmd/
 │   ├── api/
-│   │   ├── main.go           # entry point: wire inject + start server
-│   │   ├── wire.go           # wire provider set
-│   │   └── wire_gen.go       # wire generated (jangan diedit manual)
+│   │   └── main.go           # entry point API server
 │   └── consumer/
-│       ├── main.go           # entry point consumer goroutine
-│       ├── wire.go
-│       └── wire_gen.go
+│       └── main.go           # RabbitMQ consumer + Elasticsearch indexer
 │
 ├── internal/
 │   │
@@ -87,7 +82,8 @@ content-hub/
 │   │   │   └── outbox.go
 │   │   └── elasticsearch/
 │   │       ├── product.go
-│   │       └── news.go
+│   │       ├── news.go
+│   │       └── search.go
 │   │
 │   ├── usecase/              # ★ Layer 3: Usecase (implements domain/usecase)
 │   │   ├── product.go
@@ -100,13 +96,6 @@ content-hub/
 │   │       │   ├── product.go
 │   │       │   ├── news.go
 │   │       │   └── search.go
-│   │       ├── middleware/
-│   │       │   └── error.go
-│   │       ├── request/      # request DTO + validator
-│   │       │   ├── product.go
-│   │       │   └── news.go
-│   │       ├── response/     # response DTO
-│   │       │   └── response.go
 │   │       └── router.go
 │   │
 │   ├── infrastructure/       # driver/adapter eksternal
@@ -130,6 +119,7 @@ content-hub/
 │
 ├── config/
 │   └── config.go             # viper config loader
+├── Dockerfile
 ├── docker-compose.yml
 ├── .env.example
 ├── go.mod
@@ -137,6 +127,7 @@ content-hub/
 ```
 
 ---
+
 ## Database Schema (DDL)
 
 ```sql
@@ -206,7 +197,6 @@ CREATE TABLE outbox_events (
       "title":       { "type": "text", "analyzer": "standard" },
       "description": { "type": "text" },
       "category_id": { "type": "long" },
-      "category":    { "type": "keyword" },
       "price":       { "type": "float" },
       "status":      { "type": "keyword" },
       "updated_at":  { "type": "date" }
@@ -225,7 +215,6 @@ CREATE TABLE outbox_events (
       "title":        { "type": "text", "analyzer": "standard" },
       "content":      { "type": "text" },
       "category_id":  { "type": "long" },
-      "category":     { "type": "keyword" },
       "author":       { "type": "keyword" },
       "status":       { "type": "keyword" },
       "published_at": { "type": "date" }
@@ -238,161 +227,128 @@ CREATE TABLE outbox_events (
 
 ## API Endpoints
 
-| Method | Path | Query Params | Deskripsi |
+| Method | Path | Query Params | Description |
 |--------|------|--------------|-----------|
-| `POST` | `/v1/products` | — | Insert produk |
-| `GET` | `/v1/products` | `page`, `limit`, `category_id` | List + pagination dari MySQL |
-| `GET` | `/v1/products/:id` | — | Detail produk |
-| `PUT` | `/v1/products/:id` | — | Update produk |
-| `POST` | `/v1/news` | — | Insert berita |
-| `GET` | `/v1/news` | `page`, `limit`, `category_id` | List + pagination dari MySQL |
-| `GET` | `/v1/news/:id` | — | Detail berita |
-| `PUT` | `/v1/news/:id` | — | Update berita |
+| `POST` | `/v1/products` | — | Create product |
+| `GET` | `/v1/products` | `page`, `limit`, `category_id` | List product |
+| `GET` | `/v1/products/:id` | — | Product detail |
+| `PUT` | `/v1/products/:id` | — | Update product |
+| `DELETE` | `/v1/products/:id` | — | Delete product |
+| `POST` | `/v1/news` | — | Create news |
+| `GET` | `/v1/news` | `page`, `limit`, `category_id` | List news |
+| `GET` | `/v1/news/:id` | — | News detail |
+| `PUT` | `/v1/news/:id` | — | Update news |
+| `DELETE` | `/v1/news/:id` | — | Delete news |
 | `GET` | `/v1/search` | `q`, `type`, `category_id`, `page`, `limit` | Search via Elasticsearch |
-
-### Contoh Request
-
-```bash
-# Insert product
-curl -X POST http://localhost:8080/v1/products \
-  -H "Content-Type: application/json" \
-  -d '{"category_id":1,"title":"Laptop Gaming ASUS","price":15000000,"status":"active"}'
-
-# List dengan pagination
-curl "http://localhost:8080/v1/products?page=1&limit=10&category_id=1"
-
-# Search by title + kategori
-curl "http://localhost:8080/v1/search?q=laptop&type=product&category_id=1&page=1&limit=10"
-```
 
 ---
 
 ## Setup & Menjalankan
 
-### 1. Clone & konfigurasi
+### 1. Clone Repository
 
 ```bash
 git clone https://github.com/reski-dev-id/content-hub-elastic-rabbitmq.git
 cd content-hub
-cp .env.example .env
 ```
 
-### 2. Isi `.env`
+---
 
-```env
-APP_PORT=8080
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=content_hub
-DB_USER=root
-DB_PASSWORD=secret
-RABBITMQ_URL=amqp://guest:guest@localhost:5672/
-ELASTIC_URL=http://localhost:9200
-```
-
-### 3. Jalankan infrastruktur
+### 2. Build Docker
 
 ```bash
-docker-compose up -d
+docker compose build
 ```
 
-### 4. Install dependencies & generate Wire
+---
+
+### 3. Jalankan Semua Service
 
 ```bash
-go mod tidy
-go install github.com/google/wire/cmd/wire@latest
-cd cmd/api && wire && cd ../..
+docker compose up
 ```
 
-### 5. Migrasi database
+Service yang akan berjalan:
+- MySQL
+- RabbitMQ
+- Elasticsearch
+- API Server
+- Outbox Poller
+- RabbitMQ Consumer
+
+---
+
+## Flow Sistem
+
+```
+Client Request
+      ↓
+API Server (Gin)
+      ↓
+MySQL + outbox_events
+      ↓
+Outbox Poller
+      ↓
+RabbitMQ
+      ↓
+Consumer
+      ↓
+Elasticsearch
+```
+
+---
+
+## Verifikasi
+
+### List Product
 
 ```bash
-go install -tags 'mysql' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-migrate -path migrations -database "mysql://root:secret@tcp(localhost:3306)/content_hub" up
+curl http://localhost:8080/v1/products
 ```
 
-### 6. Buat Elasticsearch index
+---
+
+### Create Product
 
 ```bash
-curl -X PUT http://localhost:9200/products \
-  -H 'Content-Type: application/json' \
-  -d @migrations/es_products.json
-
-curl -X PUT http://localhost:9200/news \
-  -H 'Content-Type: application/json' \
-  -d @migrations/es_news.json
+curl -X POST http://localhost:8080/v1/products \
+-H "Content-Type: application/json" \
+-d '{
+  "category_id": 1,
+  "title": "iPhone 16",
+  "slug": "iphone-16",
+  "description": "Apple smartphone",
+  "price": 25000000,
+  "status": "active"
+}'
 ```
 
-
-## ▶️ 7. Jalankan Aplikasi
-
-Aplikasi ini membutuhkan **2 proses yang berjalan bersamaan**.
-
 ---
 
-### Terminal 1 — API Server
-
-go run cmd/api/main.go
-
-Fungsi:
-- menerima request (CRUD)
-- menyimpan data ke MySQL
-- menulis event ke `outbox_events`
-
----
-
-### Terminal 2 — Outbox Consumer
-
-go run cmd/consumer/main.go
-
-Fungsi:
-- membaca event dari `outbox_events`
-- publish ke RabbitMQ
-- update status event menjadi `sent`
-
----
-
-## 🔁 Flow Sistem
-
-Client Request  
-↓  
-API (Gin)  
-↓  
-MySQL (products + outbox_events)  
-↓  
-Outbox Poller (Consumer)  
-↓  
-RabbitMQ  
-
----
-
-## ⚠️ Catatan Penting
-
-- API dan Consumer **harus dijalankan bersamaan**
-- Jika consumer tidak dijalankan:
-  - data tetap masuk database
-  - event tidak diproses
-  - status tetap `pending`
-
----
-
-## 🔍 Verifikasi
-
-SELECT * FROM outbox_events;
-
-Expected:
-- sebelum consumer → pending
-- setelah consumer → sent
-
-
-### 8. Jalankan consumer (terminal terpisah)
+### Create News
 
 ```bash
-go run cmd/consumer/main.go
+curl -X POST http://localhost:8080/v1/news \
+-H "Content-Type: application/json" \
+-d '{
+  "category_id": 6,
+  "title": "AI Dunia",
+  "slug": "ai-dunia",
+  "content": "AI berkembang sangat cepat",
+  "author": "Reski",
+  "status": "published"
+}'
 ```
 
 ---
 
+### Search Product
+
+```bash
+curl "http://localhost:8080/v1/search?q=iphone&type=product&page=1&limit=10"
+```
+
+---
 
 ## Prinsip Clean Architecture yang Diterapkan
 
@@ -400,7 +356,8 @@ go run cmd/consumer/main.go
 |---------|-------------|
 | Dependency Rule | Semua dependency arahnya ke dalam — domain tidak import infrastructure sama sekali |
 | Interface Segregation | Tiap repository dan usecase punya interface tersendiri di `domain/` |
-| Dependency Injection | Wire generate dependency graph otomatis dari constructor functions |
+| Dependency Injection | Dependency diinject manual melalui constructor function |
 | Separation of Concern | Entity, business logic, data access, dan delivery sepenuhnya terpisah |
 | Testability | Semua usecase dan handler mudah di-mock karena hanya bergantung pada interface |
 | Single Responsibility | Tiap struct punya satu tanggung jawab yang jelas |
+

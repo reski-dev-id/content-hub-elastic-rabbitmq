@@ -1,0 +1,81 @@
+version: "3.9"
+
+services:
+
+  mysql:
+    image: mysql:8
+    container_name: mysql-local
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: testdb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-local
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: elasticsearch-local
+    restart: always
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+    ports:
+      - "9200:9200"
+
+  api:
+    build: .
+    container_name: content-hub-api
+    restart: always
+    depends_on:
+      - mysql
+      - rabbitmq
+      - elasticsearch
+    environment:
+      APP_PORT: 8080
+      DB_URL: root:root123@tcp(mysql:3306)/testdb?parseTime=true
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      ELASTIC_URL: http://elasticsearch:9200
+    command: ./api
+    ports:
+      - "8080:8080"
+
+  poller:
+    build: .
+    container_name: content-hub-poller
+    restart: always
+    depends_on:
+      - mysql
+      - rabbitmq
+    environment:
+      APP_PORT: 8080
+      DB_URL: root:root123@tcp(mysql:3306)/testdb?parseTime=true
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      ELASTIC_URL: http://elasticsearch:9200
+    command: ./poller
+
+  consumer:
+    build: .
+    container_name: content-hub-consumer
+    restart: always
+    depends_on:
+      - rabbitmq
+      - elasticsearch
+    environment:
+      APP_PORT: 8080
+      DB_URL: root:root123@tcp(mysql:3306)/testdb?parseTime=true
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      ELASTIC_URL: http://elasticsearch:9200
+    command: ./consumer
+
+volumes:
+  mysql_data:
