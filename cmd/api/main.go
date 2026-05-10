@@ -12,12 +12,23 @@ import (
 func main() {
 	cfg := config.Load()
 
-	db, _ := mysql.NewDB(cfg.DBUrl)
+	db, err := mysql.NewDB(cfg.DBUrl)
+	if err != nil {
+		panic(err)
+	}
 
 	productRepo := mysqlRepo.NewProductRepository(db)
 	productUC := usecase.NewProductUsecase(productRepo)
 	productHandler := handler.NewProductHandler(productUC)
 
-	router := http.NewRouter(productHandler)
+	newsRepo := mysqlRepo.NewNewsRepository(db)
+	newsUC := usecase.NewNewsUsecase(newsRepo)
+	newsHandler := handler.NewNewsHandler(newsUC)
+
+	router := http.NewRouter(
+		productHandler,
+		newsHandler,
+	)
+
 	router.Run(":" + cfg.AppPort)
 }
