@@ -1,13 +1,13 @@
 package elasticsearch
 
 import (
-	"github.com/elastic/go-elasticsearch/v8"
+	es8 "github.com/elastic/go-elasticsearch/v8"
 )
 
-func NewClient(url string) (*elasticsearch.Client, error) {
-	cfg := elasticsearch.Config{
+func NewClient(url string) (*es8.Client, error) {
+	cfg := es8.Config{
 		Addresses: []string{url},
 	}
 
-	return elasticsearch.NewClient(cfg)
+	return es8.NewClient(cfg)
 }

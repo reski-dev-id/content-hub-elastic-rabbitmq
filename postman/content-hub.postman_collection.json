@@ -333,6 +333,66 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "search-product-api",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/v1/search?q=samsung&type=product",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "v1",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "samsung"
+                },
+                {
+                  "key": "type",
+                  "value": "product"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "search-news-api",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/v1/search?q=openai&type=news",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "v1",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "openai"
+                },
+                {
+                  "key": "type",
+                  "value": "news"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     }
