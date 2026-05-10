@@ -323,11 +323,67 @@ curl -X PUT http://localhost:9200/news \
   -d @migrations/es_news.json
 ```
 
-### 7. Jalankan API server
 
-```bash
+## ▶️ 7. Jalankan Aplikasi
+
+Aplikasi ini membutuhkan **2 proses yang berjalan bersamaan**.
+
+---
+
+### Terminal 1 — API Server
+
 go run cmd/api/main.go
-```
+
+Fungsi:
+- menerima request (CRUD)
+- menyimpan data ke MySQL
+- menulis event ke `outbox_events`
+
+---
+
+### Terminal 2 — Outbox Consumer
+
+go run cmd/consumer/main.go
+
+Fungsi:
+- membaca event dari `outbox_events`
+- publish ke RabbitMQ
+- update status event menjadi `sent`
+
+---
+
+## 🔁 Flow Sistem
+
+Client Request  
+↓  
+API (Gin)  
+↓  
+MySQL (products + outbox_events)  
+↓  
+Outbox Poller (Consumer)  
+↓  
+RabbitMQ  
+
+---
+
+## ⚠️ Catatan Penting
+
+- API dan Consumer **harus dijalankan bersamaan**
+- Jika consumer tidak dijalankan:
+  - data tetap masuk database
+  - event tidak diproses
+  - status tetap `pending`
+
+---
+
+## 🔍 Verifikasi
+
+SELECT * FROM outbox_events;
+
+Expected:
+- sebelum consumer → pending
+- setelah consumer → sent
+
 
 ### 8. Jalankan consumer (terminal terpisah)
 
