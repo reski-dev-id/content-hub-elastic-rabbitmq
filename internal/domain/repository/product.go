@@ -10,4 +10,5 @@ type ProductRepository interface {
 	Update(product *entity.Product) error
 	Delete(id uint64) error
 	DeleteWithOutbox(id uint64, event *entity.OutboxEvent) error
+	UpdateWithOutbox(product *entity.Product, event *entity.OutboxEvent) error
 }
