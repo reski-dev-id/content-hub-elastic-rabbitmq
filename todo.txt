@@ -2,3 +2,4 @@ Docker Compose
 Validation + response wrapper
 Graceful shutdown
 Retry queue
+swagger
