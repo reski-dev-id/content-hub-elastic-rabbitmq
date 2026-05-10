@@ -81,3 +81,14 @@ func (h *ProductHandler) GetAll(c *gin.Context) {
 
 	c.JSON(http.StatusOK, data)
 }
+
+func (h *ProductHandler) Delete(c *gin.Context) {
+	id := parseUint(c.Param("id"))
+
+	if err := h.uc.Delete(id); err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, "deleted")
+}

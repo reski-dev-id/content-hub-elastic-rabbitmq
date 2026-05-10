@@ -10,6 +10,10 @@ type Config struct {
 }
 
 func Load() *Config {
+	viper.SetConfigFile(".env")
+
+	_ = viper.ReadInConfig()
+
 	viper.AutomaticEnv()
 
 	return &Config{

@@ -125,3 +125,51 @@ func (r *productRepo) Update(p *entity.Product) error {
 
 	return err
 }
+
+func (r *productRepo) Delete(id uint64) error {
+	_, err := r.db.Exec(
+		"DELETE FROM products WHERE id = ?",
+		id,
+	)
+
+	return err
+}
+
+func (r *productRepo) DeleteWithOutbox(id uint64, e *entity.OutboxEvent) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(
+		"DELETE FROM products WHERE id = ?",
+		id,
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`
+		INSERT INTO outbox_events (
+			aggregate_type,
+			aggregate_id,
+			event_type,
+			payload,
+			status
+		)
+		VALUES (?, ?, ?, ?, ?)`,
+		e.AggregateType,
+		id,
+		e.EventType,
+		e.Payload,
+		"pending",
+	)
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
