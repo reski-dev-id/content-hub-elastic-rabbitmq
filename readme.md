@@ -5,6 +5,24 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunaka
 
 ---
 
+## Features
+
+- Clean Architecture
+- DTO Request Validation
+- Swagger OpenAPI Documentation
+- Full-text Search with Elasticsearch
+- Outbox Pattern
+- RabbitMQ Async Event Processing
+- Graceful Shutdown
+- Health Check Endpoint
+- Pagination Meta Response
+- Validation Error Formatter
+- Dockerized Application
+- GitHub Actions CI/CD
+- DockerHub Auto Deploy
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -14,8 +32,13 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunaka
 | Database | MySQL 8.0 + sqlx |
 | Message Broker | RabbitMQ 3.x (amqp091-go) |
 | Search Engine | Elasticsearch 8.x |
+| API Documentation | Swagger / OpenAPI |
+| Validation | go-playground/validator |
+| Configuration | Viper |
 | Dependency Injection | Manual Constructor Injection |
 | Containerization | Docker + Docker Compose |
+| CI/CD | GitHub Actions |
+| Registry | DockerHub |
 
 ---
 
@@ -38,10 +61,13 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunaka
          ↑ dependency hanya ke dalam ↑
 ```
 
-**Aturan utama:**
+### Aturan utama
+
 - Tiap layer hanya boleh depend ke layer di bawahnya
 - Domain layer tidak boleh import package luar (pure Go)
 - Dependency ditanamkan via interface, bukan concrete struct
+- Handler tidak langsung akses repository
+- Usecase hanya bergantung pada interface repository
 
 ---
 
@@ -50,66 +76,95 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunaka
 ```
 content-hub/
 │
+├── .github/
+│   └── workflows/
+│       └── deploy.yml              # github actions docker deploy
+│
 ├── cmd/
 │   ├── api/
-│   │   └── main.go           # entry point API server
+│   │   └── main.go                 # entry point API server
 │   └── consumer/
-│       └── main.go           # RabbitMQ consumer + Elasticsearch indexer
+│       └── main.go                 # RabbitMQ consumer + Elasticsearch indexer
+│
+├── config/
+│   └── config.go                   # viper config loader
+│
+├── docs/                           # swagger generated docs
+│   ├── docs.go
+│   ├── swagger.json
+│   └── swagger.yaml
 │
 ├── internal/
 │   │
-│   ├── domain/               # ★ Layer 1: Domain (pure, no external deps)
+│   ├── domain/
 │   │   ├── entity/
-│   │   │   ├── product.go    # Product struct
-│   │   │   ├── news.go       # News struct
-│   │   │   ├── category.go   # Category struct
-│   │   │   └── outbox.go     # OutboxEvent struct
-│   │   ├── repository/       # interface repository (contract)
 │   │   │   ├── product.go
 │   │   │   ├── news.go
 │   │   │   ├── category.go
 │   │   │   └── outbox.go
-│   │   └── usecase/          # interface usecase (contract)
+│   │   │
+│   │   ├── repository/
+│   │   │   ├── product.go
+│   │   │   ├── news.go
+│   │   │   ├── category.go
+│   │   │   └── outbox.go
+│   │   │
+│   │   └── usecase/
 │   │       ├── product.go
 │   │       ├── news.go
 │   │       └── search.go
 │   │
-│   ├── repository/           # ★ Layer 2: Repository (implements domain/repository)
+│   ├── delivery/
+│   │   └── http/
+│   │       ├── handler/
+│   │       │   ├── health.go
+│   │       │   ├── product.go
+│   │       │   ├── news.go
+│   │       │   └── search.go
+│   │       │
+│   │       ├── request/
+│   │       │   ├── product.go
+│   │       │   └── news.go
+│   │       │
+│   │       ├── response/
+│   │       │   └── response.go
+│   │       │
+│   │       └── router.go
+│   │
+│   ├── helper/
+│   │   ├── pagination.go
+│   │   ├── parse_pagination.go
+│   │   └── validation.go
+│   │
+│   ├── infrastructure/
+│   │   ├── mysql/
+│   │   │   └── db.go
+│   │   │
+│   │   ├── elasticsearch/
+│   │   │   └── client.go
+│   │   │
+│   │   └── rabbitmq/
+│   │       ├── connection.go
+│   │       ├── publisher.go
+│   │       └── consumer.go
+│   │
+│   ├── repository/
 │   │   ├── mysql/
 │   │   │   ├── product.go
 │   │   │   ├── news.go
 │   │   │   ├── category.go
 │   │   │   └── outbox.go
+│   │   │
 │   │   └── elasticsearch/
-│   │       ├── product.go
-│   │       ├── news.go
 │   │       └── search.go
 │   │
-│   ├── usecase/              # ★ Layer 3: Usecase (implements domain/usecase)
+│   ├── usecase/
 │   │   ├── product.go
 │   │   ├── news.go
 │   │   └── search.go
 │   │
-│   ├── delivery/             # ★ Layer 4: Delivery
-│   │   └── http/
-│   │       ├── handler/
-│   │       │   ├── product.go
-│   │       │   ├── news.go
-│   │       │   └── search.go
-│   │       └── router.go
-│   │
-│   ├── infrastructure/       # driver/adapter eksternal
-│   │   ├── mysql/
-│   │   │   └── db.go         # *sqlx.DB provider
-│   │   ├── elasticsearch/
-│   │   │   └── client.go     # *elasticsearch.Client provider
-│   │   └── rabbitmq/
-│   │       ├── connection.go # *amqp.Connection provider
-│   │       ├── publisher.go
-│   │       └── consumer.go
-│   │
 │   └── outbox/
-│       └── poller.go         # goroutine outbox → RabbitMQ
+│       └── poller.go
 │
 ├── migrations/
 │   ├── 001_create_categories.sql
@@ -117,8 +172,6 @@ content-hub/
 │   ├── 003_create_news.sql
 │   └── 004_create_outbox_events.sql
 │
-├── config/
-│   └── config.go             # viper config loader
 ├── Dockerfile
 ├── docker-compose.yml
 ├── .env.example
@@ -132,53 +185,53 @@ content-hub/
 
 ```sql
 CREATE TABLE categories (
-  id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  name       VARCHAR(100) NOT NULL,
-  slug       VARCHAR(100) NOT NULL UNIQUE,
-  type       ENUM('product', 'news') NOT NULL,
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) NOT NULL UNIQUE,
+  type ENUM('product', 'news') NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE products (
-  id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   category_id BIGINT UNSIGNED NOT NULL,
-  title       VARCHAR(255) NOT NULL,
-  slug        VARCHAR(255) NOT NULL UNIQUE,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL UNIQUE,
   description TEXT,
-  price       DECIMAL(15,2) NOT NULL DEFAULT 0,
-  status      ENUM('active', 'inactive') DEFAULT 'active',
-  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  price DECIMAL(15,2) NOT NULL DEFAULT 0,
+  status ENUM('active', 'inactive') DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (category_id) REFERENCES categories(id),
   INDEX idx_title (title),
   INDEX idx_category (category_id)
 );
 
 CREATE TABLE news (
-  id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  category_id  BIGINT UNSIGNED NOT NULL,
-  title        VARCHAR(255) NOT NULL,
-  slug         VARCHAR(255) NOT NULL UNIQUE,
-  content      LONGTEXT,
-  author       VARCHAR(100) NOT NULL,
-  status       ENUM('draft', 'published') DEFAULT 'draft',
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  category_id BIGINT UNSIGNED NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  content LONGTEXT,
+  author VARCHAR(100) NOT NULL,
+  status ENUM('draft', 'published') DEFAULT 'draft',
   published_at TIMESTAMP NULL,
-  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (category_id) REFERENCES categories(id),
   INDEX idx_title (title),
   INDEX idx_status_published (status, published_at)
 );
 
 CREATE TABLE outbox_events (
-  id             BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   aggregate_type ENUM('product', 'news') NOT NULL,
-  aggregate_id   BIGINT UNSIGNED NOT NULL,
-  event_type     VARCHAR(50) NOT NULL,
-  payload        JSON NOT NULL,
-  status         ENUM('pending', 'sent') DEFAULT 'pending',
-  created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  sent_at        TIMESTAMP NULL,
+  aggregate_id BIGINT UNSIGNED NOT NULL,
+  event_type VARCHAR(50) NOT NULL,
+  payload JSON NOT NULL,
+  status ENUM('pending', 'sent') DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  sent_at TIMESTAMP NULL,
   INDEX idx_status (status)
 );
 ```
@@ -187,36 +240,36 @@ CREATE TABLE outbox_events (
 
 ## Elasticsearch Index Mapping
 
-### Index: `products`
+### Index: products
 
 ```json
 {
   "mappings": {
     "properties": {
-      "id":          { "type": "long" },
-      "title":       { "type": "text", "analyzer": "standard" },
+      "id": { "type": "long" },
+      "title": { "type": "text", "analyzer": "standard" },
       "description": { "type": "text" },
       "category_id": { "type": "long" },
-      "price":       { "type": "float" },
-      "status":      { "type": "keyword" },
-      "updated_at":  { "type": "date" }
+      "price": { "type": "float" },
+      "status": { "type": "keyword" },
+      "updated_at": { "type": "date" }
     }
   }
 }
 ```
 
-### Index: `news`
+### Index: news
 
 ```json
 {
   "mappings": {
     "properties": {
-      "id":           { "type": "long" },
-      "title":        { "type": "text", "analyzer": "standard" },
-      "content":      { "type": "text" },
-      "category_id":  { "type": "long" },
-      "author":       { "type": "keyword" },
-      "status":       { "type": "keyword" },
+      "id": { "type": "long" },
+      "title": { "type": "text", "analyzer": "standard" },
+      "content": { "type": "text" },
+      "category_id": { "type": "long" },
+      "author": { "type": "keyword" },
+      "status": { "type": "keyword" },
       "published_at": { "type": "date" }
     }
   }
@@ -229,17 +282,90 @@ CREATE TABLE outbox_events (
 
 | Method | Path | Query Params | Description |
 |--------|------|--------------|-----------|
-| `POST` | `/v1/products` | — | Create product |
-| `GET` | `/v1/products` | `page`, `limit`, `category_id` | List product |
-| `GET` | `/v1/products/:id` | — | Product detail |
-| `PUT` | `/v1/products/:id` | — | Update product |
-| `DELETE` | `/v1/products/:id` | — | Delete product |
-| `POST` | `/v1/news` | — | Create news |
-| `GET` | `/v1/news` | `page`, `limit`, `category_id` | List news |
-| `GET` | `/v1/news/:id` | — | News detail |
-| `PUT` | `/v1/news/:id` | — | Update news |
-| `DELETE` | `/v1/news/:id` | — | Delete news |
-| `GET` | `/v1/search` | `q`, `type`, `category_id`, `page`, `limit` | Search via Elasticsearch |
+| POST | /v1/products | — | Create product |
+| GET | /v1/products | page, limit, category_id | List product |
+| GET | /v1/products/:id | — | Product detail |
+| PUT | /v1/products/:id | — | Update product |
+| DELETE | /v1/products/:id | — | Delete product |
+| POST | /v1/news | — | Create news |
+| GET | /v1/news | page, limit, category_id | List news |
+| GET | /v1/news/:id | — | News detail |
+| PUT | /v1/news/:id | — | Update news |
+| DELETE | /v1/news/:id | — | Delete news |
+| GET | /v1/search | q, type, category_id, page, limit | Search via Elasticsearch |
+| GET | /health | — | Health check |
+
+---
+
+## Swagger Documentation
+
+Generate swagger docs:
+
+```bash
+swag init -g cmd/api/main.go
+```
+
+Open browser:
+
+```txt
+http://localhost:8080/swagger/index.html
+```
+
+---
+
+## Health Check
+
+```bash
+curl http://localhost:8080/health
+```
+
+Example response:
+
+```json
+{
+  "success": true,
+  "message": "service healthy",
+  "data": {
+    "status": "UP",
+    "mysql": "UP",
+    "elasticsearch": "UP",
+    "rabbitmq": "UP"
+  }
+}
+```
+
+---
+
+## Validation Error Format
+
+```json
+{
+  "success": false,
+  "message": "validation failed",
+  "errors": {
+    "title": "minimum length is 3",
+    "price": "must be greater than 0"
+  }
+}
+```
+
+---
+
+## Pagination Response Format
+
+```json
+{
+  "success": true,
+  "message": "products fetched successfully",
+  "data": [],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 100,
+    "total_pages": 10
+  }
+}
+```
 
 ---
 
@@ -249,12 +375,20 @@ CREATE TABLE outbox_events (
 
 ```bash
 git clone https://github.com/reski-dev-id/content-hub-elastic-rabbitmq.git
-cd content-hub
+cd content-hub-elastic-rabbitmq
 ```
 
 ---
 
-### 2. Build Docker
+### 2. Copy Environment
+
+```bash
+cp .env.example .env
+```
+
+---
+
+### 3. Build Docker
 
 ```bash
 docker compose build
@@ -262,19 +396,62 @@ docker compose build
 
 ---
 
-### 3. Jalankan Semua Service
+### 4. Jalankan Semua Service
 
 ```bash
 docker compose up
 ```
 
 Service yang akan berjalan:
+
 - MySQL
 - RabbitMQ
 - Elasticsearch
 - API Server
 - Outbox Poller
 - RabbitMQ Consumer
+
+---
+
+## Docker Image
+
+DockerHub:
+
+```txt
+programmerreski/content-hub
+```
+
+Pull latest image:
+
+```bash
+docker pull programmerreski/content-hub:latest
+```
+
+---
+
+## CI/CD
+
+Deployment flow:
+
+```txt
+feature/*
+→ development
+→ main
+→ GitHub Actions
+→ DockerHub auto push
+```
+
+Saat merge ke branch main:
+
+- GitHub Actions otomatis build docker image
+- Push image ke DockerHub
+- Generate latest image tag
+
+GitHub Actions workflow:
+
+```txt
+.github/workflows/deploy.yml
+```
 
 ---
 
@@ -355,9 +532,37 @@ curl "http://localhost:8080/v1/search?q=iphone&type=product&page=1&limit=10"
 | Prinsip | Implementasi |
 |---------|-------------|
 | Dependency Rule | Semua dependency arahnya ke dalam — domain tidak import infrastructure sama sekali |
-| Interface Segregation | Tiap repository dan usecase punya interface tersendiri di `domain/` |
+| Interface Segregation | Tiap repository dan usecase punya interface tersendiri di domain |
 | Dependency Injection | Dependency diinject manual melalui constructor function |
 | Separation of Concern | Entity, business logic, data access, dan delivery sepenuhnya terpisah |
 | Testability | Semua usecase dan handler mudah di-mock karena hanya bergantung pada interface |
 | Single Responsibility | Tiap struct punya satu tanggung jawab yang jelas |
+| Graceful Shutdown | Server menangani SIGTERM/SIGINT dengan proper cleanup |
+| Async Processing | Outbox pattern + RabbitMQ untuk eventual consistency |
+
+---
+
+## Current Status
+
+Project saat ini sudah memiliki:
+
+- Production-ready backend foundation
+- Async event-driven architecture
+- Search indexing pipeline
+- Standardized API response
+- Docker-based deployment
+- Automated CI/CD pipeline
+- Health monitoring endpoint
+- Swagger documentation
+
+Planned next improvements:
+
+- Request logger middleware
+- Recover middleware
+- Request ID middleware
+- Integration testing
+- VPS deployment
+- Nginx reverse proxy
+- SSL/domain setup
+- Recommendation system
 
