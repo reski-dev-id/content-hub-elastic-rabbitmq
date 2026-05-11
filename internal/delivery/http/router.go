@@ -13,9 +13,13 @@ func NewRouter(
 	ph *handler.ProductHandler,
 	nh *handler.NewsHandler,
 	sh *handler.SearchHandler,
+	hh *handler.HealthHandler,
 ) *gin.Engine {
 
 	r := gin.Default()
+
+	// Health Check
+	r.GET("/health", hh.Check)
 
 	v1 := r.Group("/v1")
 	{

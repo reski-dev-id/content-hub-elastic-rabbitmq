@@ -9,6 +9,29 @@
     "host": "localhost:8080",
     "basePath": "/",
     "paths": {
+        "/health": {
+            "get": {
+                "description": "Check API status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/news": {
             "get": {
                 "description": "Get news with pagination",
@@ -514,31 +537,38 @@
             "type": "object",
             "properties": {
                 "author": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Reski"
                 },
                 "category_id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 2
                 },
                 "content": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Model terbaru membawa peningkatan reasoning dan performa."
                 },
                 "created_at": {
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "published_at": {
                     "type": "string"
                 },
                 "slug": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "openai-rilis-gpt-baru"
                 },
                 "status": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "published"
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "OpenAI Rilis GPT Baru"
                 },
                 "updated_at": {
                     "type": "string"
@@ -549,28 +579,35 @@
             "type": "object",
             "properties": {
                 "category_id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "created_at": {
                     "type": "string"
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Laptop Apple terbaru"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "price": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 42000000
                 },
                 "slug": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "macbook-pro-m4"
                 },
                 "status": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "active"
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "MacBook Pro M4"
                 },
                 "updated_at": {
                     "type": "string"
