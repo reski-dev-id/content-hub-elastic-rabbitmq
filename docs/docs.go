@@ -597,6 +597,7 @@ const docTemplate = `{
                 },
                 "description": {
                     "type": "string",
+                    "maxLength": 500,
                     "example": "Laptop Apple terbaru"
                 },
                 "price": {
@@ -605,6 +606,7 @@ const docTemplate = `{
                 },
                 "slug": {
                     "type": "string",
+                    "minLength": 3,
                     "example": "macbook-pro-m4"
                 },
                 "status": {
@@ -680,6 +682,7 @@ const docTemplate = `{
                 },
                 "description": {
                     "type": "string",
+                    "maxLength": 500,
                     "example": "Laptop Apple terbaru"
                 },
                 "price": {
@@ -688,6 +691,7 @@ const docTemplate = `{
                 },
                 "slug": {
                     "type": "string",
+                    "minLength": 3,
                     "example": "macbook-pro-m4"
                 },
                 "status": {

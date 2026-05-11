@@ -36,8 +36,25 @@ func (u *newsUsecase) GetAll(
 	page,
 	limit int,
 	categoryID *uint64,
-) ([]entity.News, error) {
-	return u.repo.FindAll(page, limit, categoryID)
+) ([]entity.News, int64, error) {
+
+	news, err := u.repo.FindAll(
+		page,
+		limit,
+		categoryID,
+	)
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	total, err := u.repo.Count(categoryID)
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return news, total, nil
 }
 
 func (u *newsUsecase) GetByID(id uint64) (*entity.News, error) {

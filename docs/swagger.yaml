@@ -39,12 +39,14 @@ definitions:
         type: integer
       description:
         example: Laptop Apple terbaru
+        maxLength: 500
         type: string
       price:
         example: 42000000
         type: number
       slug:
         example: macbook-pro-m4
+        minLength: 3
         type: string
       status:
         enum:
@@ -102,12 +104,14 @@ definitions:
         type: integer
       description:
         example: Laptop Apple terbaru
+        maxLength: 500
         type: string
       price:
         example: 42000000
         type: number
       slug:
         example: macbook-pro-m4
+        minLength: 3
         type: string
       status:
         enum:

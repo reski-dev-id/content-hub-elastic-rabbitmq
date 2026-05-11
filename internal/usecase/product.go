@@ -30,8 +30,20 @@ func (u *productUsecase) Create(p *entity.Product) error {
 	return u.repo.CreateWithOutbox(p, event)
 }
 
-func (u *productUsecase) GetAll(page, limit int, categoryID *uint64) ([]entity.Product, error) {
-	return u.repo.FindAll(page, limit, categoryID)
+func (u *productUsecase) GetAll(page, limit int, categoryID *uint64) ([]entity.Product, int64, error) {
+	products, err := u.repo.FindAll(page, limit, categoryID)
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	total, err := u.repo.Count(categoryID)
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return products, total, nil
 }
 
 func (u *productUsecase) GetByID(id uint64) (*entity.Product, error) {

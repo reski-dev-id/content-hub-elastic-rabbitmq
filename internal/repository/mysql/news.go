@@ -48,6 +48,7 @@ func (r *newsRepo) CreateWithOutbox(
 	e *entity.OutboxEvent,
 ) error {
 	tx, err := r.db.Beginx()
+
 	if err != nil {
 		return err
 	}
@@ -78,6 +79,7 @@ func (r *newsRepo) CreateWithOutbox(
 	}
 
 	newsID, err := res.LastInsertId()
+
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -132,7 +134,24 @@ func (r *newsRepo) FindAll(
 	args = append(args, limit, offset)
 
 	err := r.db.Select(&news, query, args...)
+
 	return news, err
+}
+
+func (r *newsRepo) Count(categoryID *uint64) (int64, error) {
+	var total int64
+
+	query := "SELECT COUNT(*) FROM news WHERE 1=1"
+	args := []interface{}{}
+
+	if categoryID != nil {
+		query += " AND category_id = ?"
+		args = append(args, *categoryID)
+	}
+
+	err := r.db.Get(&total, query, args...)
+
+	return total, err
 }
 
 func (r *newsRepo) FindByID(id uint64) (*entity.News, error) {
@@ -183,6 +202,7 @@ func (r *newsRepo) UpdateWithOutbox(
 	e *entity.OutboxEvent,
 ) error {
 	tx, err := r.db.Beginx()
+
 	if err != nil {
 		return err
 	}
@@ -250,6 +270,7 @@ func (r *newsRepo) DeleteWithOutbox(
 	e *entity.OutboxEvent,
 ) error {
 	tx, err := r.db.Beginx()
+
 	if err != nil {
 		return err
 	}

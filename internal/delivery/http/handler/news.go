@@ -7,6 +7,7 @@ import (
 	"content-hub/internal/delivery/http/response"
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/domain/usecase"
+	"content-hub/internal/helper"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,7 +43,7 @@ func (h *NewsHandler) Create(c *gin.Context) {
 			c,
 			http.StatusBadRequest,
 			"validation failed",
-			err.Error(),
+			helper.FormatValidationError(err),
 		)
 
 		return
@@ -127,8 +128,7 @@ func (h *NewsHandler) GetByID(c *gin.Context) {
 // @Router /v1/news [get]
 func (h *NewsHandler) GetAll(c *gin.Context) {
 
-	page := parseIntDefault(c.Query("page"), 1)
-	limit := parseIntDefault(c.Query("limit"), 10)
+	pagination := helper.ParsePagination(c)
 
 	var categoryID *uint64
 
@@ -137,9 +137,9 @@ func (h *NewsHandler) GetAll(c *gin.Context) {
 		categoryID = &val
 	}
 
-	data, err := h.uc.GetAll(
-		page,
-		limit,
+	data, total, err := h.uc.GetAll(
+		pagination.Page,
+		pagination.Limit,
 		categoryID,
 	)
 
@@ -160,10 +160,11 @@ func (h *NewsHandler) GetAll(c *gin.Context) {
 		http.StatusOK,
 		"news fetched successfully",
 		data,
-		gin.H{
-			"page":  page,
-			"limit": limit,
-		},
+		helper.NewPagination(
+			pagination.Page,
+			pagination.Limit,
+			total,
+		),
 	)
 }
 
@@ -191,7 +192,7 @@ func (h *NewsHandler) Update(c *gin.Context) {
 			c,
 			http.StatusBadRequest,
 			"validation failed",
-			err.Error(),
+			helper.FormatValidationError(err),
 		)
 
 		return
