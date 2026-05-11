@@ -18,7 +18,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	rmqConn, err := rabbitmq.NewConnection(
+	rmqConn, err := rabbitmq.NewRabbitMQ(
 		cfg.RabbitMQUrl,
 	)
 
