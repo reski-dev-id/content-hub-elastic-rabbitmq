@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"content-hub/internal/delivery/http/response"
 	"content-hub/internal/domain/usecase"
 
 	"github.com/gin-gonic/gin"
@@ -18,7 +19,22 @@ func NewSearchHandler(
 	return &SearchHandler{uc}
 }
 
+// SearchContent godoc
+// @Summary Search products or news
+// @Description Full-text search using Elasticsearch
+// @Tags search
+// @Accept json
+// @Produce json
+// @Param q query string true "Search keyword"
+// @Param type query string true "Search type (product/news)"
+// @Param category_id query int false "Category ID"
+// @Param page query int false "Page"
+// @Param limit query int false "Limit"
+// @Success 200 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /v1/search [get]
 func (h *SearchHandler) Search(c *gin.Context) {
+
 	q := c.Query("q")
 	searchType := c.Query("type")
 
@@ -48,12 +64,21 @@ func (h *SearchHandler) Search(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(
+
+		response.Error(
+			c,
 			http.StatusInternalServerError,
+			"failed to search content",
 			err.Error(),
 		)
+
 		return
 	}
 
-	c.JSON(http.StatusOK, data)
+	response.Success(
+		c,
+		http.StatusOK,
+		"search completed successfully",
+		data,
+	)
 }
