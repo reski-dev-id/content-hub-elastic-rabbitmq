@@ -19,9 +19,8 @@ func NewRouter(
 
 	r := gin.New()
 
-	r.Use(gin.Recovery())
-
 	r.Use(
+		middleware.RequestID(),
 		middleware.Logger(),
 		middleware.RecoveryMiddleware(),
 	)

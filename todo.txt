@@ -32,3 +32,8 @@ Structured logging
 HTTP access logging
 Error tracing
 Production observability foundation
+
+retry queue
+dead letter queue
+Redis cache
+Prometheus metrics
