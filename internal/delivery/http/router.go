@@ -20,7 +20,11 @@ func NewRouter(
 	r := gin.New()
 
 	r.Use(gin.Recovery())
-	r.Use(middleware.Logger())
+
+	r.Use(
+		middleware.Logger(),
+		middleware.RecoveryMiddleware(),
+	)
 
 	// Health Check
 	r.GET("/health", hh.Check)
