@@ -3,6 +3,7 @@ package mysql
 import (
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/domain/repository"
+	"content-hub/internal/logger"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -11,11 +12,16 @@ type outboxRepo struct {
 	db *sqlx.DB
 }
 
-func NewOutboxRepository(db *sqlx.DB) repository.OutboxRepository {
+func NewOutboxRepository(
+	db *sqlx.DB,
+) repository.OutboxRepository {
 	return &outboxRepo{db}
 }
 
-func (r *outboxRepo) FindPending(limit int) ([]entity.OutboxEvent, error) {
+func (r *outboxRepo) FindPending(
+	limit int,
+) ([]entity.OutboxEvent, error) {
+
 	var events []entity.OutboxEvent
 
 	query := `
@@ -25,14 +31,36 @@ func (r *outboxRepo) FindPending(limit int) ([]entity.OutboxEvent, error) {
 	LIMIT ?`
 
 	err := r.db.Select(&events, query, limit)
-	return events, err
+
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Int("limit", limit).
+			Msg("failed fetch pending outbox events")
+
+		return nil, err
+	}
+
+	return events, nil
 }
 
 func (r *outboxRepo) MarkAsSent(id uint64) error {
+
 	_, err := r.db.Exec(`
 	UPDATE outbox_events
 	SET status = 'sent', sent_at = NOW()
 	WHERE id = ?`, id)
 
-	return err
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("event_id", id).
+			Msg("failed mark outbox event as sent")
+
+		return err
+	}
+
+	return nil
 }

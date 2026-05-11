@@ -4,6 +4,7 @@ import (
 	"context"
 
 	domain "content-hub/internal/domain/usecase"
+	"content-hub/internal/logger"
 	esRepo "content-hub/internal/repository/elasticsearch"
 )
 
@@ -43,6 +44,15 @@ func (u *searchUsecase) Search(
 	)
 
 	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Str("query", q).
+			Str("type", searchType).
+			Int("page", page).
+			Int("limit", limit).
+			Msg("failed to search content")
+
 		return nil, 0, err
 	}
 
@@ -63,6 +73,14 @@ func (u *searchUsecase) Search(
 
 		response = append(response, source)
 	}
+
+	logger.Log.Info().
+		Str("query", q).
+		Str("type", searchType).
+		Int("page", page).
+		Int("limit", limit).
+		Int64("total", total).
+		Msg("search executed")
 
 	return response, total, nil
 }

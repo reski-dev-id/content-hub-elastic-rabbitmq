@@ -7,6 +7,7 @@ import (
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/domain/repository"
 	domain "content-hub/internal/domain/usecase"
+	"content-hub/internal/logger"
 )
 
 type newsUsecase struct {
@@ -20,6 +21,7 @@ func NewNewsUsecase(
 }
 
 func (u *newsUsecase) Create(n *entity.News) error {
+
 	payloadBytes, _ := json.Marshal(n)
 
 	event := &entity.OutboxEvent{
@@ -29,7 +31,24 @@ func (u *newsUsecase) Create(n *entity.News) error {
 		Status:        "pending",
 	}
 
-	return u.repo.CreateWithOutbox(n, event)
+	err := u.repo.CreateWithOutbox(n, event)
+
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Str("title", n.Title).
+			Msg("failed to create news")
+
+		return err
+	}
+
+	logger.Log.Info().
+		Uint64("news_id", n.ID).
+		Str("title", n.Title).
+		Msg("news created")
+
+	return nil
 }
 
 func (u *newsUsecase) GetAll(
@@ -45,23 +64,59 @@ func (u *newsUsecase) GetAll(
 	)
 
 	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Int("page", page).
+			Int("limit", limit).
+			Msg("failed to fetch news")
+
 		return nil, 0, err
 	}
 
 	total, err := u.repo.Count(categoryID)
 
 	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Msg("failed to count news")
+
 		return nil, 0, err
 	}
+
+	logger.Log.Info().
+		Int("page", page).
+		Int("limit", limit).
+		Int64("total", total).
+		Msg("news fetched")
 
 	return news, total, nil
 }
 
 func (u *newsUsecase) GetByID(id uint64) (*entity.News, error) {
-	return u.repo.FindByID(id)
+
+	news, err := u.repo.FindByID(id)
+
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("news_id", id).
+			Msg("failed to get news by id")
+
+		return nil, err
+	}
+
+	logger.Log.Info().
+		Uint64("news_id", id).
+		Msg("news fetched by id")
+
+	return news, nil
 }
 
 func (u *newsUsecase) Update(n *entity.News) error {
+
 	payloadBytes, _ := json.Marshal(n)
 
 	event := &entity.OutboxEvent{
@@ -72,10 +127,28 @@ func (u *newsUsecase) Update(n *entity.News) error {
 		Status:        "pending",
 	}
 
-	return u.repo.UpdateWithOutbox(n, event)
+	err := u.repo.UpdateWithOutbox(n, event)
+
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("news_id", n.ID).
+			Msg("failed to update news")
+
+		return err
+	}
+
+	logger.Log.Info().
+		Uint64("news_id", n.ID).
+		Str("title", n.Title).
+		Msg("news updated")
+
+	return nil
 }
 
 func (u *newsUsecase) Delete(id uint64) error {
+
 	payload := fmt.Sprintf(`{"id": %d}`, id)
 
 	event := &entity.OutboxEvent{
@@ -86,5 +159,21 @@ func (u *newsUsecase) Delete(id uint64) error {
 		Status:        "pending",
 	}
 
-	return u.repo.DeleteWithOutbox(id, event)
+	err := u.repo.DeleteWithOutbox(id, event)
+
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("news_id", id).
+			Msg("failed to delete news")
+
+		return err
+	}
+
+	logger.Log.Info().
+		Uint64("news_id", id).
+		Msg("news deleted")
+
+	return nil
 }

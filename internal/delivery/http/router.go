@@ -2,6 +2,7 @@ package http
 
 import (
 	"content-hub/internal/delivery/http/handler"
+	"content-hub/internal/delivery/http/middleware"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -16,7 +17,13 @@ func NewRouter(
 	hh *handler.HealthHandler,
 ) *gin.Engine {
 
-	r := gin.Default()
+	r := gin.New()
+
+	r.Use(
+		middleware.RequestID(),
+		middleware.Logger(),
+		middleware.RecoveryMiddleware(),
+	)
 
 	// Health Check
 	r.GET("/health", hh.Check)

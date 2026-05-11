@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"content-hub/internal/domain/entity"
+	"content-hub/internal/logger"
 
 	es8 "github.com/elastic/go-elasticsearch/v8"
 )
@@ -25,8 +26,16 @@ func (r *ProductRepository) Index(
 	ctx context.Context,
 	product *entity.Product,
 ) error {
+
 	data, err := json.Marshal(product)
+
 	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("product_id", product.ID).
+			Msg("failed marshal product document")
+
 		return err
 	}
 
@@ -40,13 +49,28 @@ func (r *ProductRepository) Index(
 		r.client.Index.WithRefresh("true"),
 	)
 
-	return err
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("product_id", product.ID).
+			Msg("failed index product document")
+
+		return err
+	}
+
+	logger.Log.Info().
+		Uint64("product_id", product.ID).
+		Msg("product indexed to elasticsearch")
+
+	return nil
 }
 
 func (r *ProductRepository) Delete(
 	ctx context.Context,
 	id uint64,
 ) error {
+
 	_, err := r.client.Delete(
 		"products",
 		strconv.FormatUint(id, 10),
@@ -54,5 +78,19 @@ func (r *ProductRepository) Delete(
 		r.client.Delete.WithRefresh("true"),
 	)
 
-	return err
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("product_id", id).
+			Msg("failed delete product document")
+
+		return err
+	}
+
+	logger.Log.Info().
+		Uint64("product_id", id).
+		Msg("product deleted from elasticsearch")
+
+	return nil
 }
