@@ -116,13 +116,31 @@ func (r *productRepo) FindAll(page, limit int, categoryID *uint64) ([]entity.Pro
 	args = append(args, limit, offset)
 
 	err := r.db.Select(&products, query, args...)
+
 	return products, err
+}
+
+func (r *productRepo) Count(categoryID *uint64) (int64, error) {
+	var total int64
+
+	query := "SELECT COUNT(*) FROM products WHERE 1=1"
+	args := []interface{}{}
+
+	if categoryID != nil {
+		query += " AND category_id = ?"
+		args = append(args, *categoryID)
+	}
+
+	err := r.db.Get(&total, query, args...)
+
+	return total, err
 }
 
 func (r *productRepo) FindByID(id uint64) (*entity.Product, error) {
 	var product entity.Product
 
 	err := r.db.Get(&product, "SELECT * FROM products WHERE id = ?", id)
+
 	if err != nil {
 		return nil, err
 	}
@@ -160,6 +178,7 @@ func (r *productRepo) Delete(id uint64) error {
 
 func (r *productRepo) DeleteWithOutbox(id uint64, e *entity.OutboxEvent) error {
 	tx, err := r.db.Beginx()
+
 	if err != nil {
 		return err
 	}
@@ -168,6 +187,7 @@ func (r *productRepo) DeleteWithOutbox(id uint64, e *entity.OutboxEvent) error {
 		"DELETE FROM products WHERE id = ?",
 		id,
 	)
+
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -202,6 +222,7 @@ func (r *productRepo) UpdateWithOutbox(
 	e *entity.OutboxEvent,
 ) error {
 	tx, err := r.db.Beginx()
+
 	if err != nil {
 		return err
 	}

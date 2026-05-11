@@ -6,6 +6,7 @@ type ProductRepository interface {
 	Create(product *entity.Product) error
 	CreateWithOutbox(product *entity.Product, event *entity.OutboxEvent) error
 	FindAll(page, limit int, categoryID *uint64) ([]entity.Product, error)
+	Count(categoryID *uint64) (int64, error)
 	FindByID(id uint64) (*entity.Product, error)
 	Update(product *entity.Product) error
 	Delete(id uint64) error

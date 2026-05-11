@@ -5,6 +5,7 @@ import (
 
 	"content-hub/internal/delivery/http/response"
 	"content-hub/internal/domain/usecase"
+	"content-hub/internal/helper"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,15 +39,7 @@ func (h *SearchHandler) Search(c *gin.Context) {
 	q := c.Query("q")
 	searchType := c.Query("type")
 
-	page := parseIntDefault(
-		c.Query("page"),
-		1,
-	)
-
-	limit := parseIntDefault(
-		c.Query("limit"),
-		10,
-	)
+	pagination := helper.ParsePagination(c)
 
 	var categoryID *uint64
 
@@ -55,12 +48,12 @@ func (h *SearchHandler) Search(c *gin.Context) {
 		categoryID = &val
 	}
 
-	data, err := h.uc.Search(
+	data, total, err := h.uc.Search(
 		q,
 		searchType,
 		categoryID,
-		page,
-		limit,
+		pagination.Page,
+		pagination.Limit,
 	)
 
 	if err != nil {
@@ -75,10 +68,15 @@ func (h *SearchHandler) Search(c *gin.Context) {
 		return
 	}
 
-	response.Success(
+	response.SuccessWithMeta(
 		c,
 		http.StatusOK,
 		"search completed successfully",
 		data,
+		helper.NewPagination(
+			pagination.Page,
+			pagination.Limit,
+			total,
+		),
 	)
 }
