@@ -1,48 +1,45 @@
 basePath: /
 definitions:
-  entity.News:
+  request.CreateNewsRequest:
     properties:
       author:
         example: Reski
         type: string
       category_id:
-        example: 2
-        type: integer
-      content:
-        example: Model terbaru membawa peningkatan reasoning dan performa.
-        type: string
-      created_at:
-        type: string
-      id:
         example: 1
         type: integer
-      published_at:
+      content:
+        example: Model terbaru membawa peningkatan reasoning.
         type: string
       slug:
         example: openai-rilis-gpt-baru
         type: string
       status:
+        enum:
+        - draft
+        - published
         example: published
         type: string
       title:
         example: OpenAI Rilis GPT Baru
+        minLength: 3
         type: string
-      updated_at:
-        type: string
+    required:
+    - author
+    - category_id
+    - content
+    - slug
+    - status
+    - title
     type: object
-  entity.Product:
+  request.CreateProductRequest:
     properties:
       category_id:
         example: 1
         type: integer
-      created_at:
-        type: string
       description:
         example: Laptop Apple terbaru
         type: string
-      id:
-        example: 1
-        type: integer
       price:
         example: 42000000
         type: number
@@ -50,13 +47,84 @@ definitions:
         example: macbook-pro-m4
         type: string
       status:
+        enum:
+        - active
+        - inactive
         example: active
         type: string
       title:
         example: MacBook Pro M4
+        minLength: 3
         type: string
-      updated_at:
+    required:
+    - category_id
+    - price
+    - slug
+    - status
+    - title
+    type: object
+  request.UpdateNewsRequest:
+    properties:
+      author:
+        example: Reski
         type: string
+      category_id:
+        example: 1
+        type: integer
+      content:
+        example: Model terbaru membawa peningkatan reasoning.
+        type: string
+      slug:
+        example: openai-rilis-gpt-baru
+        type: string
+      status:
+        enum:
+        - draft
+        - published
+        example: published
+        type: string
+      title:
+        example: OpenAI Rilis GPT Baru
+        minLength: 3
+        type: string
+    required:
+    - author
+    - category_id
+    - content
+    - slug
+    - status
+    - title
+    type: object
+  request.UpdateProductRequest:
+    properties:
+      category_id:
+        example: 1
+        type: integer
+      description:
+        example: Laptop Apple terbaru
+        type: string
+      price:
+        example: 42000000
+        type: number
+      slug:
+        example: macbook-pro-m4
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        example: active
+        type: string
+      title:
+        example: MacBook Pro M4
+        minLength: 3
+        type: string
+    required:
+    - category_id
+    - price
+    - slug
+    - status
+    - title
     type: object
   response.Response:
     properties:
@@ -132,7 +200,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/entity.News'
+          $ref: '#/definitions/request.CreateNewsRequest'
       produces:
       - application/json
       responses:
@@ -215,7 +283,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/entity.News'
+          $ref: '#/definitions/request.UpdateNewsRequest'
       produces:
       - application/json
       responses:
@@ -276,7 +344,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/entity.Product'
+          $ref: '#/definitions/request.CreateProductRequest'
       produces:
       - application/json
       responses:
@@ -359,7 +427,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/entity.Product'
+          $ref: '#/definitions/request.UpdateProductRequest'
       produces:
       - application/json
       responses:

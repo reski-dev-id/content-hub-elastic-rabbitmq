@@ -105,7 +105,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/entity.News"
+                            "$ref": "#/definitions/request.CreateNewsRequest"
                         }
                     }
                 ],
@@ -194,7 +194,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/entity.News"
+                            "$ref": "#/definitions/request.UpdateNewsRequest"
                         }
                     }
                 ],
@@ -323,7 +323,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/entity.Product"
+                            "$ref": "#/definitions/request.CreateProductRequest"
                         }
                     }
                 ],
@@ -412,7 +412,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/entity.Product"
+                            "$ref": "#/definitions/request.UpdateProductRequest"
                         }
                     }
                 ],
@@ -539,8 +539,16 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "entity.News": {
+        "request.CreateNewsRequest": {
             "type": "object",
+            "required": [
+                "author",
+                "category_id",
+                "content",
+                "slug",
+                "status",
+                "title"
+            ],
             "properties": {
                 "author": {
                     "type": "string",
@@ -548,21 +556,11 @@ const docTemplate = `{
                 },
                 "category_id": {
                     "type": "integer",
-                    "example": 2
+                    "example": 1
                 },
                 "content": {
                     "type": "string",
-                    "example": "Model terbaru membawa peningkatan reasoning dan performa."
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "published_at": {
-                    "type": "string"
+                    "example": "Model terbaru membawa peningkatan reasoning."
                 },
                 "slug": {
                     "type": "string",
@@ -570,34 +568,36 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string",
+                    "enum": [
+                        "draft",
+                        "published"
+                    ],
                     "example": "published"
                 },
                 "title": {
                     "type": "string",
+                    "minLength": 3,
                     "example": "OpenAI Rilis GPT Baru"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
-        "entity.Product": {
+        "request.CreateProductRequest": {
             "type": "object",
+            "required": [
+                "category_id",
+                "price",
+                "slug",
+                "status",
+                "title"
+            ],
             "properties": {
                 "category_id": {
                     "type": "integer",
                     "example": 1
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "description": {
                     "type": "string",
                     "example": "Laptop Apple terbaru"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
                 },
                 "price": {
                     "type": "number",
@@ -609,14 +609,99 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string",
+                    "enum": [
+                        "active",
+                        "inactive"
+                    ],
                     "example": "active"
                 },
                 "title": {
                     "type": "string",
+                    "minLength": 3,
                     "example": "MacBook Pro M4"
+                }
+            }
+        },
+        "request.UpdateNewsRequest": {
+            "type": "object",
+            "required": [
+                "author",
+                "category_id",
+                "content",
+                "slug",
+                "status",
+                "title"
+            ],
+            "properties": {
+                "author": {
+                    "type": "string",
+                    "example": "Reski"
                 },
-                "updated_at": {
-                    "type": "string"
+                "category_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "content": {
+                    "type": "string",
+                    "example": "Model terbaru membawa peningkatan reasoning."
+                },
+                "slug": {
+                    "type": "string",
+                    "example": "openai-rilis-gpt-baru"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "draft",
+                        "published"
+                    ],
+                    "example": "published"
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 3,
+                    "example": "OpenAI Rilis GPT Baru"
+                }
+            }
+        },
+        "request.UpdateProductRequest": {
+            "type": "object",
+            "required": [
+                "category_id",
+                "price",
+                "slug",
+                "status",
+                "title"
+            ],
+            "properties": {
+                "category_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Laptop Apple terbaru"
+                },
+                "price": {
+                    "type": "number",
+                    "example": 42000000
+                },
+                "slug": {
+                    "type": "string",
+                    "example": "macbook-pro-m4"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "active",
+                        "inactive"
+                    ],
+                    "example": "active"
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 3,
+                    "example": "MacBook Pro M4"
                 }
             }
         },
