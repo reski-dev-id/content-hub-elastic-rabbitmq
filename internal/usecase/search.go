@@ -25,7 +25,7 @@ func (u *searchUsecase) Search(
 	categoryID *uint64,
 	page int,
 	limit int,
-) (interface{}, error) {
+) (interface{}, int64, error) {
 
 	index := "products"
 
@@ -43,26 +43,26 @@ func (u *searchUsecase) Search(
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	hits := result["hits"].(map[string]interface{})
 	items := hits["hits"].([]interface{})
 
+	totalMap := hits["total"].(map[string]interface{})
+	total := int64(totalMap["value"].(float64))
+
 	response := []map[string]interface{}{}
 
 	for _, item := range items {
+
 		hit := item.(map[string]interface{})
 		source := hit["_source"].(map[string]interface{})
+
 		source["score"] = hit["_score"]
 
 		response = append(response, source)
 	}
 
-	return map[string]interface{}{
-		"page":  page,
-		"limit": limit,
-		"total": hits["total"],
-		"items": response,
-	}, nil
+	return response, total, nil
 }

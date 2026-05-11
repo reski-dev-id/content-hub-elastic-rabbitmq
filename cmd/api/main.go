@@ -14,6 +14,7 @@ import (
 	"content-hub/internal/delivery/http/handler"
 	esInfra "content-hub/internal/infrastructure/elasticsearch"
 	"content-hub/internal/infrastructure/mysql"
+	rabbitInfra "content-hub/internal/infrastructure/rabbitmq"
 	esRepo "content-hub/internal/repository/elasticsearch"
 	mysqlRepo "content-hub/internal/repository/mysql"
 	"content-hub/internal/usecase"
@@ -36,7 +37,19 @@ func main() {
 		panic(err)
 	}
 
-	healthHandler := handler.NewHealthHandler()
+	rabbitConn, err := rabbitInfra.NewRabbitMQ(
+		cfg.RabbitMQUrl,
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	healthHandler := handler.NewHealthHandler(
+		db,
+		esClient,
+		rabbitConn,
+	)
 
 	// Product
 	productRepo := mysqlRepo.NewProductRepository(db)
