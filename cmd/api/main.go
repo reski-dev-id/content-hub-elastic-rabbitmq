@@ -7,10 +7,18 @@
 package main
 
 import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	_ "content-hub/docs"
 
 	"content-hub/config"
-	"content-hub/internal/delivery/http"
+	httpDelivery "content-hub/internal/delivery/http"
 	"content-hub/internal/delivery/http/handler"
 	esInfra "content-hub/internal/infrastructure/elasticsearch"
 	"content-hub/internal/infrastructure/mysql"
@@ -87,12 +95,62 @@ func main() {
 	)
 
 	// Router
-	router := http.NewRouter(
+	router := httpDelivery.NewRouter(
 		productHandler,
 		newsHandler,
 		searchHandler,
 		healthHandler,
 	)
 
-	router.Run(":" + cfg.AppPort)
+	server := &http.Server{
+		Addr:    ":" + cfg.AppPort,
+		Handler: router,
+	}
+
+	go func() {
+
+		log.Printf(
+			"server running on port %s",
+			cfg.AppPort,
+		)
+
+		if err := server.ListenAndServe(); err != nil &&
+			err != http.ErrServerClosed {
+
+			log.Fatal(err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+
+	signal.Notify(
+		quit,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
+
+	<-quit
+
+	log.Println("shutting down server...")
+
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		10*time.Second,
+	)
+
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := db.Close(); err != nil {
+		log.Println("failed to close mysql:", err)
+	}
+
+	if err := rabbitConn.Close(); err != nil {
+		log.Println("failed to close rabbitmq:", err)
+	}
+
+	log.Println("server exited properly")
 }
