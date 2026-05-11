@@ -1,9 +1,11 @@
 package mysql
 
 import (
+	"encoding/json"
+
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/domain/repository"
-	"encoding/json"
+	"content-hub/internal/logger"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -12,16 +14,29 @@ type productRepo struct {
 	db *sqlx.DB
 }
 
-func NewProductRepository(db *sqlx.DB) repository.ProductRepository {
+func NewProductRepository(
+	db *sqlx.DB,
+) repository.ProductRepository {
 	return &productRepo{db}
 }
 
-func (r *productRepo) Create(p *entity.Product) error {
+func (r *productRepo) Create(
+	p *entity.Product,
+) error {
+
 	query := `
-	INSERT INTO products (category_id, title, slug, description, price, status)
+	INSERT INTO products (
+		category_id,
+		title,
+		slug,
+		description,
+		price,
+		status
+	)
 	VALUES (?, ?, ?, ?, ?, ?)`
 
-	_, err := r.db.Exec(query,
+	_, err := r.db.Exec(
+		query,
 		p.CategoryID,
 		p.Title,
 		p.Slug,
@@ -30,15 +45,32 @@ func (r *productRepo) Create(p *entity.Product) error {
 		p.Status,
 	)
 
-	return err
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Str("title", p.Title).
+			Msg("failed create product")
+
+		return err
+	}
+
+	return nil
 }
 
 func (r *productRepo) CreateWithOutbox(
 	p *entity.Product,
 	e *entity.OutboxEvent,
 ) error {
+
 	tx, err := r.db.Beginx()
+
 	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Msg("failed begin transaction create product")
+
 		return err
 	}
 
@@ -61,13 +93,27 @@ func (r *productRepo) CreateWithOutbox(
 	)
 
 	if err != nil {
+
 		tx.Rollback()
+
+		logger.Log.Error().
+			Err(err).
+			Str("title", p.Title).
+			Msg("failed insert product")
+
 		return err
 	}
 
 	productID, err := res.LastInsertId()
+
 	if err != nil {
+
 		tx.Rollback()
+
+		logger.Log.Error().
+			Err(err).
+			Msg("failed get product last insert id")
+
 		return err
 	}
 
@@ -92,14 +138,38 @@ func (r *productRepo) CreateWithOutbox(
 	)
 
 	if err != nil {
+
 		tx.Rollback()
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("product_id", uint64(productID)).
+			Msg("failed insert outbox product event")
+
 		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("product_id", uint64(productID)).
+			Msg("failed commit transaction create product")
+
+		return err
+	}
+
+	return nil
 }
 
-func (r *productRepo) FindAll(page, limit int, categoryID *uint64) ([]entity.Product, error) {
+func (r *productRepo) FindAll(
+	page,
+	limit int,
+	categoryID *uint64,
+) ([]entity.Product, error) {
+
 	var products []entity.Product
 
 	offset := (page - 1) * limit
@@ -117,10 +187,24 @@ func (r *productRepo) FindAll(page, limit int, categoryID *uint64) ([]entity.Pro
 
 	err := r.db.Select(&products, query, args...)
 
-	return products, err
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Int("page", page).
+			Int("limit", limit).
+			Msg("failed fetch products")
+
+		return nil, err
+	}
+
+	return products, nil
 }
 
-func (r *productRepo) Count(categoryID *uint64) (int64, error) {
+func (r *productRepo) Count(
+	categoryID *uint64,
+) (int64, error) {
+
 	var total int64
 
 	query := "SELECT COUNT(*) FROM products WHERE 1=1"
@@ -133,28 +217,59 @@ func (r *productRepo) Count(categoryID *uint64) (int64, error) {
 
 	err := r.db.Get(&total, query, args...)
 
-	return total, err
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Msg("failed count products")
+
+		return 0, err
+	}
+
+	return total, nil
 }
 
-func (r *productRepo) FindByID(id uint64) (*entity.Product, error) {
+func (r *productRepo) FindByID(
+	id uint64,
+) (*entity.Product, error) {
+
 	var product entity.Product
 
-	err := r.db.Get(&product, "SELECT * FROM products WHERE id = ?", id)
+	err := r.db.Get(
+		&product,
+		"SELECT * FROM products WHERE id = ?",
+		id,
+	)
 
 	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("product_id", id).
+			Msg("failed find product by id")
+
 		return nil, err
 	}
 
 	return &product, nil
 }
 
-func (r *productRepo) Update(p *entity.Product) error {
+func (r *productRepo) Update(
+	p *entity.Product,
+) error {
+
 	query := `
 	UPDATE products
-	SET category_id=?, title=?, slug=?, description=?, price=?, status=?
+	SET category_id=?,
+		title=?,
+		slug=?,
+		description=?,
+		price=?,
+		status=?
 	WHERE id=?`
 
-	_, err := r.db.Exec(query,
+	_, err := r.db.Exec(
+		query,
 		p.CategoryID,
 		p.Title,
 		p.Slug,
@@ -164,22 +279,54 @@ func (r *productRepo) Update(p *entity.Product) error {
 		p.ID,
 	)
 
-	return err
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("product_id", p.ID).
+			Msg("failed update product")
+
+		return err
+	}
+
+	return nil
 }
 
-func (r *productRepo) Delete(id uint64) error {
+func (r *productRepo) Delete(
+	id uint64,
+) error {
+
 	_, err := r.db.Exec(
 		"DELETE FROM products WHERE id = ?",
 		id,
 	)
 
-	return err
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("product_id", id).
+			Msg("failed delete product")
+
+		return err
+	}
+
+	return nil
 }
 
-func (r *productRepo) DeleteWithOutbox(id uint64, e *entity.OutboxEvent) error {
+func (r *productRepo) DeleteWithOutbox(
+	id uint64,
+	e *entity.OutboxEvent,
+) error {
+
 	tx, err := r.db.Beginx()
 
 	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Msg("failed begin transaction delete product")
+
 		return err
 	}
 
@@ -189,7 +336,14 @@ func (r *productRepo) DeleteWithOutbox(id uint64, e *entity.OutboxEvent) error {
 	)
 
 	if err != nil {
+
 		tx.Rollback()
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("product_id", id).
+			Msg("failed delete product transaction")
+
 		return err
 	}
 
@@ -210,26 +364,56 @@ func (r *productRepo) DeleteWithOutbox(id uint64, e *entity.OutboxEvent) error {
 	)
 
 	if err != nil {
+
 		tx.Rollback()
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("product_id", id).
+			Msg("failed insert outbox delete product")
+
 		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("product_id", id).
+			Msg("failed commit delete product")
+
+		return err
+	}
+
+	return nil
 }
 
 func (r *productRepo) UpdateWithOutbox(
 	p *entity.Product,
 	e *entity.OutboxEvent,
 ) error {
+
 	tx, err := r.db.Beginx()
 
 	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Msg("failed begin transaction update product")
+
 		return err
 	}
 
 	_, err = tx.Exec(`
 		UPDATE products
-		SET category_id=?, title=?, slug=?, description=?, price=?, status=?
+		SET category_id=?,
+			title=?,
+			slug=?,
+			description=?,
+			price=?,
+			status=?
 		WHERE id=?`,
 		p.CategoryID,
 		p.Title,
@@ -241,7 +425,14 @@ func (r *productRepo) UpdateWithOutbox(
 	)
 
 	if err != nil {
+
 		tx.Rollback()
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("product_id", p.ID).
+			Msg("failed update product transaction")
+
 		return err
 	}
 
@@ -262,9 +453,28 @@ func (r *productRepo) UpdateWithOutbox(
 	)
 
 	if err != nil {
+
 		tx.Rollback()
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("product_id", p.ID).
+			Msg("failed insert outbox update product")
+
 		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("product_id", p.ID).
+			Msg("failed commit update product")
+
+		return err
+	}
+
+	return nil
 }

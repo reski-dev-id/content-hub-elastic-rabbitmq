@@ -1,7 +1,26 @@
 package rabbitmq
 
-import "github.com/rabbitmq/amqp091-go"
+import (
+	"content-hub/internal/logger"
 
-func NewConnection(url string) (*amqp091.Connection, error) {
-	return amqp091.Dial(url)
+	amqp "github.com/rabbitmq/amqp091-go"
+)
+
+func NewRabbitMQ(url string) (*amqp.Connection, error) {
+
+	conn, err := amqp.Dial(url)
+
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Msg("failed connect rabbitmq")
+
+		return nil, err
+	}
+
+	logger.Log.Info().
+		Msg("rabbitmq connected")
+
+	return conn, nil
 }

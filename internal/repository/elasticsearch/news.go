@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"content-hub/internal/domain/entity"
+	"content-hub/internal/logger"
 
 	es8 "github.com/elastic/go-elasticsearch/v8"
 )
@@ -25,8 +26,16 @@ func (r *NewsRepository) Index(
 	ctx context.Context,
 	news *entity.News,
 ) error {
+
 	data, err := json.Marshal(news)
+
 	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("news_id", news.ID).
+			Msg("failed marshal news document")
+
 		return err
 	}
 
@@ -40,13 +49,28 @@ func (r *NewsRepository) Index(
 		r.client.Index.WithRefresh("true"),
 	)
 
-	return err
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("news_id", news.ID).
+			Msg("failed index news document")
+
+		return err
+	}
+
+	logger.Log.Info().
+		Uint64("news_id", news.ID).
+		Msg("news indexed to elasticsearch")
+
+	return nil
 }
 
 func (r *NewsRepository) Delete(
 	ctx context.Context,
 	id uint64,
 ) error {
+
 	_, err := r.client.Delete(
 		"news",
 		strconv.FormatUint(id, 10),
@@ -54,5 +78,19 @@ func (r *NewsRepository) Delete(
 		r.client.Delete.WithRefresh("true"),
 	)
 
-	return err
+	if err != nil {
+
+		logger.Log.Error().
+			Err(err).
+			Uint64("news_id", id).
+			Msg("failed delete news document")
+
+		return err
+	}
+
+	logger.Log.Info().
+		Uint64("news_id", id).
+		Msg("news deleted from elasticsearch")
+
+	return nil
 }

@@ -8,7 +8,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,6 +22,7 @@ import (
 	esInfra "content-hub/internal/infrastructure/elasticsearch"
 	"content-hub/internal/infrastructure/mysql"
 	rabbitInfra "content-hub/internal/infrastructure/rabbitmq"
+	"content-hub/internal/logger"
 	esRepo "content-hub/internal/repository/elasticsearch"
 	mysqlRepo "content-hub/internal/repository/mysql"
 	"content-hub/internal/usecase"
@@ -30,11 +30,16 @@ import (
 
 func main() {
 
+	logger.Init()
+
 	cfg := config.Load()
 
 	db, err := mysql.NewDB(cfg.DBUrl)
 	if err != nil {
-		panic(err)
+
+		logger.Log.Fatal().
+			Err(err).
+			Msg("failed to connect mysql")
 	}
 
 	esClient, err := esInfra.NewClient(
@@ -42,7 +47,10 @@ func main() {
 	)
 
 	if err != nil {
-		panic(err)
+
+		logger.Log.Fatal().
+			Err(err).
+			Msg("failed to connect elasticsearch")
 	}
 
 	rabbitConn, err := rabbitInfra.NewRabbitMQ(
@@ -50,7 +58,10 @@ func main() {
 	)
 
 	if err != nil {
-		panic(err)
+
+		logger.Log.Fatal().
+			Err(err).
+			Msg("failed to connect rabbitmq")
 	}
 
 	healthHandler := handler.NewHealthHandler(
@@ -109,15 +120,16 @@ func main() {
 
 	go func() {
 
-		log.Printf(
-			"server running on port %s",
-			cfg.AppPort,
-		)
+		logger.Log.Info().
+			Str("port", cfg.AppPort).
+			Msg("server running")
 
 		if err := server.ListenAndServe(); err != nil &&
 			err != http.ErrServerClosed {
 
-			log.Fatal(err)
+			logger.Log.Fatal().
+				Err(err).
+				Msg("failed to start server")
 		}
 	}()
 
@@ -131,7 +143,8 @@ func main() {
 
 	<-quit
 
-	log.Println("shutting down server...")
+	logger.Log.Info().
+		Msg("shutting down server")
 
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
@@ -141,16 +154,26 @@ func main() {
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatal(err)
+
+		logger.Log.Fatal().
+			Err(err).
+			Msg("failed to shutdown server")
 	}
 
 	if err := db.Close(); err != nil {
-		log.Println("failed to close mysql:", err)
+
+		logger.Log.Error().
+			Err(err).
+			Msg("failed to close mysql")
 	}
 
 	if err := rabbitConn.Close(); err != nil {
-		log.Println("failed to close rabbitmq:", err)
+
+		logger.Log.Error().
+			Err(err).
+			Msg("failed to close rabbitmq")
 	}
 
-	log.Println("server exited properly")
+	logger.Log.Info().
+		Msg("server exited properly")
 }
