@@ -23,7 +23,7 @@ func main() {
 	productES := esRepo.NewProductRepository(esClient)
 	newsES := esRepo.NewNewsRepository(esClient)
 
-	rmqConn, err := rabbitmq.NewConnection(
+	rmqConn, err := rabbitmq.NewRabbitMQ(
 		cfg.RabbitMQUrl,
 	)
 
