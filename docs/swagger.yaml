@@ -1,0 +1,495 @@
+basePath: /
+definitions:
+  request.CreateNewsRequest:
+    properties:
+      author:
+        example: Reski
+        type: string
+      category_id:
+        example: 1
+        type: integer
+      content:
+        example: Model terbaru membawa peningkatan reasoning.
+        type: string
+      slug:
+        example: openai-rilis-gpt-baru
+        type: string
+      status:
+        enum:
+        - draft
+        - published
+        example: published
+        type: string
+      title:
+        example: OpenAI Rilis GPT Baru
+        minLength: 3
+        type: string
+    required:
+    - author
+    - category_id
+    - content
+    - slug
+    - status
+    - title
+    type: object
+  request.CreateProductRequest:
+    properties:
+      category_id:
+        example: 1
+        type: integer
+      description:
+        example: Laptop Apple terbaru
+        maxLength: 500
+        type: string
+      price:
+        example: 42000000
+        type: number
+      slug:
+        example: macbook-pro-m4
+        minLength: 3
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        example: active
+        type: string
+      title:
+        example: MacBook Pro M4
+        minLength: 3
+        type: string
+    required:
+    - category_id
+    - price
+    - slug
+    - status
+    - title
+    type: object
+  request.UpdateNewsRequest:
+    properties:
+      author:
+        example: Reski
+        type: string
+      category_id:
+        example: 1
+        type: integer
+      content:
+        example: Model terbaru membawa peningkatan reasoning.
+        type: string
+      slug:
+        example: openai-rilis-gpt-baru
+        type: string
+      status:
+        enum:
+        - draft
+        - published
+        example: published
+        type: string
+      title:
+        example: OpenAI Rilis GPT Baru
+        minLength: 3
+        type: string
+    required:
+    - author
+    - category_id
+    - content
+    - slug
+    - status
+    - title
+    type: object
+  request.UpdateProductRequest:
+    properties:
+      category_id:
+        example: 1
+        type: integer
+      description:
+        example: Laptop Apple terbaru
+        maxLength: 500
+        type: string
+      price:
+        example: 42000000
+        type: number
+      slug:
+        example: macbook-pro-m4
+        minLength: 3
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        example: active
+        type: string
+      title:
+        example: MacBook Pro M4
+        minLength: 3
+        type: string
+    required:
+    - category_id
+    - price
+    - slug
+    - status
+    - title
+    type: object
+  response.Response:
+    properties:
+      data: {}
+      errors: {}
+      message:
+        type: string
+      meta: {}
+      success:
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Product and News API with Elasticsearch Search
+  title: Content Hub API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Check API status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Health check
+      tags:
+      - health
+  /v1/news:
+    get:
+      consumes:
+      - application/json
+      description: Get news with pagination
+      parameters:
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Category ID
+        in: query
+        name: category_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get news list
+      tags:
+      - news
+    post:
+      consumes:
+      - application/json
+      description: Create new news
+      parameters:
+      - description: News payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateNewsRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Create news
+      tags:
+      - news
+  /v1/news/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete news by ID
+      parameters:
+      - description: News ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Delete news
+      tags:
+      - news
+    get:
+      consumes:
+      - application/json
+      description: Get news by ID
+      parameters:
+      - description: News ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get news detail
+      tags:
+      - news
+    put:
+      consumes:
+      - application/json
+      description: Update news by ID
+      parameters:
+      - description: News ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: News payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateNewsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Update news
+      tags:
+      - news
+  /v1/products:
+    get:
+      consumes:
+      - application/json
+      description: Get product list with pagination
+      parameters:
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Category ID
+        in: query
+        name: category_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get products
+      tags:
+      - products
+    post:
+      consumes:
+      - application/json
+      description: Create new product
+      parameters:
+      - description: Product payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Create product
+      tags:
+      - products
+  /v1/products/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete product by ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Delete product
+      tags:
+      - products
+    get:
+      consumes:
+      - application/json
+      description: Get product by ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get product detail
+      tags:
+      - products
+    put:
+      consumes:
+      - application/json
+      description: Update product by ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Product payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Update product
+      tags:
+      - products
+  /v1/search:
+    get:
+      consumes:
+      - application/json
+      description: Full-text search using Elasticsearch
+      parameters:
+      - description: Search keyword
+        in: query
+        name: q
+        required: true
+        type: string
+      - description: Search type (product/news)
+        in: query
+        name: type
+        required: true
+        type: string
+      - description: Category ID
+        in: query
+        name: category_id
+        type: integer
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Search products or news
+      tags:
+      - search
+swagger: "2.0"

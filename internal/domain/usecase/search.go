@@ -7,5 +7,5 @@ type SearchUsecase interface {
 		categoryID *uint64,
 		page int,
 		limit int,
-	) (interface{}, error)
+	) (interface{}, int64, error)
 }
