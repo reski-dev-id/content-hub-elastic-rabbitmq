@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"content-hub/internal/delivery/http/request"
 	"content-hub/internal/delivery/http/response"
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/domain/usecase"
@@ -26,28 +27,37 @@ func NewNewsHandler(
 // @Tags news
 // @Accept json
 // @Produce json
-// @Param request body entity.News true "News payload"
+// @Param request body request.CreateNewsRequest true "News payload"
 // @Success 201 {object} response.Response
 // @Failure 400 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /v1/news [post]
 func (h *NewsHandler) Create(c *gin.Context) {
 
-	var req entity.News
+	var req request.CreateNewsRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 
 		response.Error(
 			c,
 			http.StatusBadRequest,
-			"invalid request body",
+			"validation failed",
 			err.Error(),
 		)
 
 		return
 	}
 
-	if err := h.uc.Create(&req); err != nil {
+	news := entity.News{
+		CategoryID: req.CategoryID,
+		Title:      req.Title,
+		Slug:       req.Slug,
+		Content:    req.Content,
+		Author:     req.Author,
+		Status:     req.Status,
+	}
+
+	if err := h.uc.Create(&news); err != nil {
 
 		response.Error(
 			c,
@@ -63,7 +73,7 @@ func (h *NewsHandler) Create(c *gin.Context) {
 		c,
 		http.StatusCreated,
 		"news created successfully",
-		req,
+		news,
 	)
 }
 
@@ -164,7 +174,7 @@ func (h *NewsHandler) GetAll(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "News ID"
-// @Param request body entity.News true "News payload"
+// @Param request body request.UpdateNewsRequest true "News payload"
 // @Success 200 {object} response.Response
 // @Failure 400 {object} response.Response
 // @Failure 500 {object} response.Response
@@ -173,23 +183,31 @@ func (h *NewsHandler) Update(c *gin.Context) {
 
 	id := parseUint(c.Param("id"))
 
-	var req entity.News
+	var req request.UpdateNewsRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 
 		response.Error(
 			c,
 			http.StatusBadRequest,
-			"invalid request body",
+			"validation failed",
 			err.Error(),
 		)
 
 		return
 	}
 
-	req.ID = id
+	news := entity.News{
+		ID:         id,
+		CategoryID: req.CategoryID,
+		Title:      req.Title,
+		Slug:       req.Slug,
+		Content:    req.Content,
+		Author:     req.Author,
+		Status:     req.Status,
+	}
 
-	if err := h.uc.Update(&req); err != nil {
+	if err := h.uc.Update(&news); err != nil {
 
 		response.Error(
 			c,
@@ -205,7 +223,7 @@ func (h *NewsHandler) Update(c *gin.Context) {
 		c,
 		http.StatusOK,
 		"news updated successfully",
-		req,
+		news,
 	)
 }
 

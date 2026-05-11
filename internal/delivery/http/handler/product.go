@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"content-hub/internal/delivery/http/request"
 	"content-hub/internal/delivery/http/response"
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/domain/usecase"
@@ -26,28 +27,37 @@ func NewProductHandler(
 // @Tags products
 // @Accept json
 // @Produce json
-// @Param request body entity.Product true "Product payload"
+// @Param request body request.CreateProductRequest true "Product payload"
 // @Success 201 {object} response.Response
 // @Failure 400 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /v1/products [post]
 func (h *ProductHandler) Create(c *gin.Context) {
 
-	var req entity.Product
+	var req request.CreateProductRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 
 		response.Error(
 			c,
 			http.StatusBadRequest,
-			"invalid request body",
+			"validation failed",
 			err.Error(),
 		)
 
 		return
 	}
 
-	if err := h.uc.Create(&req); err != nil {
+	product := entity.Product{
+		CategoryID:  req.CategoryID,
+		Title:       req.Title,
+		Slug:        req.Slug,
+		Description: req.Description,
+		Price:       req.Price,
+		Status:      req.Status,
+	}
+
+	if err := h.uc.Create(&product); err != nil {
 
 		response.Error(
 			c,
@@ -63,7 +73,7 @@ func (h *ProductHandler) Create(c *gin.Context) {
 		c,
 		http.StatusCreated,
 		"product created successfully",
-		req,
+		product,
 	)
 }
 
@@ -110,7 +120,7 @@ func (h *ProductHandler) GetByID(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Product ID"
-// @Param request body entity.Product true "Product payload"
+// @Param request body request.UpdateProductRequest true "Product payload"
 // @Success 200 {object} response.Response
 // @Failure 400 {object} response.Response
 // @Failure 500 {object} response.Response
@@ -119,23 +129,31 @@ func (h *ProductHandler) Update(c *gin.Context) {
 
 	id := c.Param("id")
 
-	var req entity.Product
+	var req request.UpdateProductRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 
 		response.Error(
 			c,
 			http.StatusBadRequest,
-			"invalid request body",
+			"validation failed",
 			err.Error(),
 		)
 
 		return
 	}
 
-	req.ID = parseUint(id)
+	product := entity.Product{
+		ID:          parseUint(id),
+		CategoryID:  req.CategoryID,
+		Title:       req.Title,
+		Slug:        req.Slug,
+		Description: req.Description,
+		Price:       req.Price,
+		Status:      req.Status,
+	}
 
-	if err := h.uc.Update(&req); err != nil {
+	if err := h.uc.Update(&product); err != nil {
 
 		response.Error(
 			c,
@@ -151,7 +169,7 @@ func (h *ProductHandler) Update(c *gin.Context) {
 		c,
 		http.StatusOK,
 		"product updated successfully",
-		req,
+		product,
 	)
 }
 
