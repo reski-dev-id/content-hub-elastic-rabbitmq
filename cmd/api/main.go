@@ -36,6 +36,8 @@ func main() {
 		panic(err)
 	}
 
+	healthHandler := handler.NewHealthHandler()
+
 	// Product
 	productRepo := mysqlRepo.NewProductRepository(db)
 
@@ -76,6 +78,7 @@ func main() {
 		productHandler,
 		newsHandler,
 		searchHandler,
+		healthHandler,
 	)
 
 	router.Run(":" + cfg.AppPort)

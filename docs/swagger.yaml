@@ -3,22 +3,29 @@ definitions:
   entity.News:
     properties:
       author:
+        example: Reski
         type: string
       category_id:
+        example: 2
         type: integer
       content:
+        example: Model terbaru membawa peningkatan reasoning dan performa.
         type: string
       created_at:
         type: string
       id:
+        example: 1
         type: integer
       published_at:
         type: string
       slug:
+        example: openai-rilis-gpt-baru
         type: string
       status:
+        example: published
         type: string
       title:
+        example: OpenAI Rilis GPT Baru
         type: string
       updated_at:
         type: string
@@ -26,20 +33,27 @@ definitions:
   entity.Product:
     properties:
       category_id:
+        example: 1
         type: integer
       created_at:
         type: string
       description:
+        example: Laptop Apple terbaru
         type: string
       id:
+        example: 1
         type: integer
       price:
+        example: 42000000
         type: number
       slug:
+        example: macbook-pro-m4
         type: string
       status:
+        example: active
         type: string
       title:
+        example: MacBook Pro M4
         type: string
       updated_at:
         type: string
@@ -61,6 +75,21 @@ info:
   title: Content Hub API
   version: "1.0"
 paths:
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Check API status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Health check
+      tags:
+      - health
   /v1/news:
     get:
       consumes:
