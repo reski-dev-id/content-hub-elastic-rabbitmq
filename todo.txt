@@ -34,3 +34,20 @@ Production observability foundation
 
 
 Prometheus metrics
+
+
+down:
+    docker compose down -v
+
+up:
+    docker compose up --build
+
+
+
+
+
+
+RabbitMQ
+http://localhost:15672
+guest
+guest

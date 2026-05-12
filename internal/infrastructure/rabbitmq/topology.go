@@ -24,6 +24,7 @@ func DeclareTopology(
 		false,
 		false,
 		amqp.Table{
+			"x-dead-letter-exchange":    "",
 			"x-dead-letter-routing-key": queue + ".retry",
 		},
 	)
@@ -58,7 +59,8 @@ func DeclareTopology(
 		false,
 		false,
 		amqp.Table{
-			"x-message-ttl":             10000,
+			"x-message-ttl":             int32(10000),
+			"x-dead-letter-exchange":    "",
 			"x-dead-letter-routing-key": queue,
 		},
 	)
