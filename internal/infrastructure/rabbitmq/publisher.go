@@ -3,15 +3,15 @@ package rabbitmq
 import (
 	"content-hub/internal/logger"
 
-	"github.com/rabbitmq/amqp091-go"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Publisher struct {
-	ch *amqp091.Channel
+	ch *amqp.Channel
 }
 
 func NewPublisher(
-	conn *amqp091.Connection,
+	conn *amqp.Connection,
 ) (*Publisher, error) {
 
 	ch, err := conn.Channel()
@@ -28,7 +28,9 @@ func NewPublisher(
 	logger.Log.Info().
 		Msg("rabbitmq publisher initialized")
 
-	return &Publisher{ch}, nil
+	return &Publisher{
+		ch: ch,
+	}, nil
 }
 
 func (p *Publisher) Publish(
@@ -36,22 +38,12 @@ func (p *Publisher) Publish(
 	body []byte,
 ) error {
 
-	_, err := p.ch.QueueDeclare(
+	err := DeclareTopology(
+		p.ch,
 		queue,
-		true,
-		false,
-		false,
-		false,
-		nil,
 	)
 
 	if err != nil {
-
-		logger.Log.Error().
-			Err(err).
-			Str("queue", queue).
-			Msg("failed declare rabbitmq queue")
-
 		return err
 	}
 
@@ -60,7 +52,7 @@ func (p *Publisher) Publish(
 		queue,
 		false,
 		false,
-		amqp091.Publishing{
+		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        body,
 		},
@@ -78,7 +70,7 @@ func (p *Publisher) Publish(
 
 	logger.Log.Info().
 		Str("queue", queue).
-		Msg("message published to rabbitmq")
+		Msg("message published")
 
 	return nil
 }

@@ -10,7 +10,9 @@ type Consumer struct {
 	channel *amqp.Channel
 }
 
-func NewConsumer(conn *amqp.Connection) (*Consumer, error) {
+func NewConsumer(
+	conn *amqp.Connection,
+) (*Consumer, error) {
 
 	ch, err := conn.Channel()
 
@@ -18,7 +20,7 @@ func NewConsumer(conn *amqp.Connection) (*Consumer, error) {
 
 		logger.Log.Error().
 			Err(err).
-			Msg("failed create rabbitmq channel")
+			Msg("failed create rabbitmq consumer channel")
 
 		return nil, err
 	}
@@ -35,29 +37,19 @@ func (c *Consumer) Consume(
 	queue string,
 ) (<-chan amqp.Delivery, error) {
 
-	_, err := c.channel.QueueDeclare(
+	err := DeclareTopology(
+		c.channel,
 		queue,
-		true,
-		false,
-		false,
-		false,
-		nil,
 	)
 
 	if err != nil {
-
-		logger.Log.Error().
-			Err(err).
-			Str("queue", queue).
-			Msg("failed declare rabbitmq queue")
-
 		return nil, err
 	}
 
-	messages, err := c.channel.Consume(
+	msgs, err := c.channel.Consume(
 		queue,
 		"",
-		true,
+		false,
 		false,
 		false,
 		false,
@@ -76,7 +68,11 @@ func (c *Consumer) Consume(
 
 	logger.Log.Info().
 		Str("queue", queue).
-		Msg("rabbitmq consumer started")
+		Msg("rabbitmq consumer subscribed")
 
-	return messages, nil
+	return msgs, nil
+}
+
+func (c *Consumer) Channel() *amqp.Channel {
+	return c.channel
 }
