@@ -1,10 +1,10 @@
+package main
+
 // @title Content Hub API
 // @version 1.0
 // @description Product and News API with Elasticsearch Search
 // @host localhost:8080
 // @BasePath /
-
-package main
 
 import (
 	"context"
@@ -30,15 +30,25 @@ import (
 
 func main() {
 
+	start := time.Now()
+
 	logger.Init()
 
 	cfg := config.Load()
 
-	db, err := mysql.NewDB(cfg.DBUrl)
+	db, err := mysql.NewDB(
+		cfg.DBUrl,
+	)
+
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
+		logger.Fatal(err).
+			Str("service", "api").
+			Str("event", "mysql_connection_failed").
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed to connect mysql")
 	}
 
@@ -48,8 +58,13 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
+		logger.Fatal(err).
+			Str("service", "api").
+			Str("event", "elasticsearch_connection_failed").
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed to connect elasticsearch")
 	}
 
@@ -59,8 +74,13 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
+		logger.Fatal(err).
+			Str("service", "api").
+			Str("event", "rabbitmq_connection_failed").
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed to connect rabbitmq")
 	}
 
@@ -71,7 +91,10 @@ func main() {
 	)
 
 	// Product
-	productRepo := mysqlRepo.NewProductRepository(db)
+
+	productRepo := mysqlRepo.NewProductRepository(
+		db,
+	)
 
 	productUC := usecase.NewProductUsecase(
 		productRepo,
@@ -82,7 +105,10 @@ func main() {
 	)
 
 	// News
-	newsRepo := mysqlRepo.NewNewsRepository(db)
+
+	newsRepo := mysqlRepo.NewNewsRepository(
+		db,
+	)
 
 	newsUC := usecase.NewNewsUsecase(
 		newsRepo,
@@ -93,6 +119,7 @@ func main() {
 	)
 
 	// Search
+
 	searchRepo := esRepo.NewSearchRepository(
 		esClient,
 	)
@@ -106,6 +133,7 @@ func main() {
 	)
 
 	// Router
+
 	router := httpDelivery.NewRouter(
 		productHandler,
 		newsHandler,
@@ -118,17 +146,33 @@ func main() {
 		Handler: router,
 	}
 
+	logger.Info().
+		Str("service", "api").
+		Str("event", "bootstrap_completed").
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
+		Msg("application bootstrap completed")
+
 	go func() {
 
-		logger.Log.Info().
+		logger.Info().
+			Str("service", "api").
+			Str("event", "server_started").
 			Str("port", cfg.AppPort).
 			Msg("server running")
 
 		if err := server.ListenAndServe(); err != nil &&
 			err != http.ErrServerClosed {
 
-			logger.Log.Fatal().
-				Err(err).
+			logger.Fatal(err).
+				Str("service", "api").
+				Str("event", "server_start_failed").
 				Msg("failed to start server")
 		}
 	}()
@@ -143,7 +187,11 @@ func main() {
 
 	<-quit
 
-	logger.Log.Info().
+	shutdownStart := time.Now()
+
+	logger.Info().
+		Str("service", "api").
+		Str("event", "server_shutdown_started").
 		Msg("shutting down server")
 
 	ctx, cancel := context.WithTimeout(
@@ -155,25 +203,42 @@ func main() {
 
 	if err := server.Shutdown(ctx); err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
+		logger.Fatal(err).
+			Str("service", "api").
+			Str("event", "server_shutdown_failed").
+			Int64(
+				"duration_ms",
+				time.Since(shutdownStart).Milliseconds(),
+			).
 			Msg("failed to shutdown server")
 	}
 
 	if err := db.Close(); err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
+			Str("service", "api").
+			Str("event", "mysql_close_failed").
 			Msg("failed to close mysql")
 	}
 
 	if err := rabbitConn.Close(); err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
+			Str("service", "api").
+			Str("event", "rabbitmq_close_failed").
 			Msg("failed to close rabbitmq")
 	}
 
-	logger.Log.Info().
+	logger.Info().
+		Str("service", "api").
+		Str("event", "server_stopped").
+		Dur(
+			"duration",
+			time.Since(shutdownStart),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(shutdownStart).Milliseconds(),
+		).
 		Msg("server exited properly")
 }

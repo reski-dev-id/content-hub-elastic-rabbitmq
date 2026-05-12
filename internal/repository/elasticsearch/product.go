@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"time"
 
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/logger"
@@ -19,7 +20,9 @@ type ProductRepository struct {
 func NewProductRepository(
 	client *es8.Client,
 ) *ProductRepository {
-	return &ProductRepository{client}
+	return &ProductRepository{
+		client: client,
+	}
 }
 
 func (r *ProductRepository) Index(
@@ -27,13 +30,22 @@ func (r *ProductRepository) Index(
 	product *entity.Product,
 ) error {
 
-	data, err := json.Marshal(product)
+	start := time.Now()
+
+	data, err := json.Marshal(
+		product,
+	)
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
+			Str("service", "elasticsearch").
+			Str("event", "product_marshal_failed").
 			Uint64("product_id", product.ID).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed marshal product document")
 
 		return err
@@ -51,16 +63,31 @@ func (r *ProductRepository) Index(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
+			Str("service", "elasticsearch").
+			Str("event", "product_index_failed").
 			Uint64("product_id", product.ID).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed index product document")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
+		Str("service", "elasticsearch").
+		Str("event", "product_indexed").
 		Uint64("product_id", product.ID).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
 		Msg("product indexed to elasticsearch")
 
 	return nil
@@ -71,6 +98,8 @@ func (r *ProductRepository) Delete(
 	id uint64,
 ) error {
 
+	start := time.Now()
+
 	_, err := r.client.Delete(
 		"products",
 		strconv.FormatUint(id, 10),
@@ -80,16 +109,31 @@ func (r *ProductRepository) Delete(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
+			Str("service", "elasticsearch").
+			Str("event", "product_delete_failed").
 			Uint64("product_id", id).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed delete product document")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
+		Str("service", "elasticsearch").
+		Str("event", "product_deleted").
 		Uint64("product_id", id).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
 		Msg("product deleted from elasticsearch")
 
 	return nil

@@ -19,7 +19,6 @@ README upgraded to production-grade documentation
 
 
 recommendation news dan product
-Retry queue
 
 
 
@@ -33,7 +32,22 @@ HTTP access logging
 Error tracing
 Production observability foundation
 
-retry queue
-dead letter queue
-Redis cache
+
 Prometheus metrics
+
+
+down:
+    docker compose down -v
+
+up:
+    docker compose up --build
+
+
+
+
+
+
+RabbitMQ
+http://localhost:15672
+guest
+guest

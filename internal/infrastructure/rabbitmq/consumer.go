@@ -1,6 +1,8 @@
 package rabbitmq
 
 import (
+	"time"
+
 	"content-hub/internal/logger"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -10,20 +12,31 @@ type Consumer struct {
 	channel *amqp.Channel
 }
 
-func NewConsumer(conn *amqp.Connection) (*Consumer, error) {
+func NewConsumer(
+	conn *amqp.Connection,
+) (*Consumer, error) {
+
+	start := time.Now()
 
 	ch, err := conn.Channel()
 
+	duration := time.Since(start).Milliseconds()
+
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
-			Msg("failed create rabbitmq channel")
+		logger.Error(err).
+			Str("service", "rabbitmq").
+			Str("event", "consumer_channel_create_failed").
+			Int64("duration_ms", duration).
+			Msg("failed create rabbitmq consumer channel")
 
 		return nil, err
 	}
 
-	logger.Log.Info().
+	logger.Info().
+		Str("service", "rabbitmq").
+		Str("event", "consumer_initialized").
+		Int64("duration_ms", duration).
 		Msg("rabbitmq consumer initialized")
 
 	return &Consumer{
@@ -35,48 +48,61 @@ func (c *Consumer) Consume(
 	queue string,
 ) (<-chan amqp.Delivery, error) {
 
-	_, err := c.channel.QueueDeclare(
+	start := time.Now()
+
+	err := DeclareTopology(
+		c.channel,
 		queue,
-		true,
-		false,
-		false,
-		false,
-		nil,
 	)
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		duration := time.Since(start).Milliseconds()
+
+		logger.Error(err).
+			Str("service", "rabbitmq").
+			Str("event", "topology_declare_failed").
 			Str("queue", queue).
-			Msg("failed declare rabbitmq queue")
+			Int64("duration_ms", duration).
+			Msg("failed declare rabbitmq topology")
 
 		return nil, err
 	}
 
-	messages, err := c.channel.Consume(
+	msgs, err := c.channel.Consume(
 		queue,
 		"",
-		true,
+		false,
 		false,
 		false,
 		false,
 		nil,
 	)
 
+	duration := time.Since(start).Milliseconds()
+
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
+			Str("service", "rabbitmq").
+			Str("event", "queue_consume_failed").
 			Str("queue", queue).
+			Int64("duration_ms", duration).
 			Msg("failed consume rabbitmq queue")
 
 		return nil, err
 	}
 
-	logger.Log.Info().
+	logger.Info().
+		Str("service", "rabbitmq").
+		Str("event", "queue_subscribed").
 		Str("queue", queue).
-		Msg("rabbitmq consumer started")
+		Int64("duration_ms", duration).
+		Msg("rabbitmq consumer subscribed")
 
-	return messages, nil
+	return msgs, nil
+}
+
+func (c *Consumer) Channel() *amqp.Channel {
+	return c.channel
 }

@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
 
   mysql:
@@ -13,6 +11,9 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    networks:
+      - content-hub-network
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -21,6 +22,8 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    networks:
+      - content-hub-network
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
@@ -29,8 +32,42 @@ services:
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     ports:
       - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - content-hub-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.13.4
+    container_name: kibana-local
+    restart: always
+    depends_on:
+      - elasticsearch
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - content-hub-network
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.13.4
+    container_name: filebeat-local
+    user: root
+    restart: always
+    depends_on:
+      - elasticsearch
+      - kibana
+    command: filebeat -e -strict.perms=false
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - content-hub-network
 
   api:
     build: .
@@ -48,6 +85,8 @@ services:
     command: ./api
     ports:
       - "8080:8080"
+    networks:
+      - content-hub-network
 
   poller:
     build: .
@@ -56,18 +95,22 @@ services:
     depends_on:
       - mysql
       - rabbitmq
+      - elasticsearch
     environment:
       APP_PORT: 8080
       DB_URL: root:root123@tcp(mysql:3306)/testdb?parseTime=true
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       ELASTIC_URL: http://elasticsearch:9200
     command: ./poller
+    networks:
+      - content-hub-network
 
   consumer:
     build: .
     container_name: content-hub-consumer
     restart: always
     depends_on:
+      - mysql
       - rabbitmq
       - elasticsearch
     environment:
@@ -76,6 +119,13 @@ services:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       ELASTIC_URL: http://elasticsearch:9200
     command: ./consumer
+    networks:
+      - content-hub-network
 
 volumes:
   mysql_data:
+  elasticsearch_data:
+
+networks:
+  content-hub-network:
+    driver: bridge

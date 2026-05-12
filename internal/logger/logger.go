@@ -21,3 +21,31 @@ func Init() {
 		Timestamp().
 		Logger()
 }
+
+func Info() *zerolog.Event {
+	return Log.Info()
+}
+
+func Warn() *zerolog.Event {
+	return Log.Warn()
+}
+
+func Error(err error) *zerolog.Event {
+
+	if err == nil {
+		return Log.Error()
+	}
+
+	return Log.Error().
+		Err(err)
+}
+
+func Fatal(err error) *zerolog.Event {
+
+	if err == nil {
+		return Log.Fatal()
+	}
+
+	return Log.Fatal().
+		Err(err)
+}

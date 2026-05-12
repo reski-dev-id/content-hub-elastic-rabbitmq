@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	domain "content-hub/internal/domain/usecase"
 	"content-hub/internal/logger"
@@ -28,11 +29,22 @@ func (u *searchUsecase) Search(
 	limit int,
 ) (interface{}, int64, error) {
 
+	start := time.Now()
+
 	index := "products"
 
 	if searchType == "news" {
 		index = "news"
 	}
+
+	logger.Info().
+		Str("service", "usecase").
+		Str("event", "search_started").
+		Str("query", q).
+		Str("type", searchType).
+		Int("page", page).
+		Int("limit", limit).
+		Msg("starting search")
 
 	result, err := u.repo.Search(
 		context.Background(),
@@ -45,41 +57,64 @@ func (u *searchUsecase) Search(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
+			Str("service", "usecase").
+			Str("event", "search_failed").
 			Str("query", q).
 			Str("type", searchType).
 			Int("page", page).
 			Int("limit", limit).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed to search content")
 
 		return nil, 0, err
 	}
 
 	hits := result["hits"].(map[string]interface{})
+
 	items := hits["hits"].([]interface{})
 
 	totalMap := hits["total"].(map[string]interface{})
-	total := int64(totalMap["value"].(float64))
+
+	total := int64(
+		totalMap["value"].(float64),
+	)
 
 	response := []map[string]interface{}{}
 
 	for _, item := range items {
 
 		hit := item.(map[string]interface{})
+
 		source := hit["_source"].(map[string]interface{})
 
 		source["score"] = hit["_score"]
 
-		response = append(response, source)
+		response = append(
+			response,
+			source,
+		)
 	}
 
-	logger.Log.Info().
+	logger.Info().
+		Str("service", "usecase").
+		Str("event", "search_completed").
 		Str("query", q).
 		Str("type", searchType).
 		Int("page", page).
 		Int("limit", limit).
 		Int64("total", total).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
 		Msg("search executed")
 
 	return response, total, nil

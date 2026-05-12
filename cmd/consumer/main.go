@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"content-hub/config"
 	"content-hub/internal/domain/entity"
@@ -14,6 +15,8 @@ import (
 
 func main() {
 
+	start := time.Now()
+
 	logger.Init()
 
 	cfg := config.Load()
@@ -24,9 +27,14 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
-			Msg("failed connect elasticsearch")
+		logger.Fatal(err).
+			Str("service", "consumer").
+			Str("event", "elasticsearch_connection_failed").
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
+			Msg("failed to connect elasticsearch")
 	}
 
 	productES := esRepo.NewProductRepository(
@@ -43,9 +51,14 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
-			Msg("failed connect rabbitmq")
+		logger.Fatal(err).
+			Str("service", "consumer").
+			Str("event", "rabbitmq_connection_failed").
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
+			Msg("failed to connect rabbitmq")
 	}
 
 	consumer, err := rabbitmq.NewConsumer(
@@ -54,9 +67,14 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
-			Msg("failed create rabbitmq consumer")
+		logger.Fatal(err).
+			Str("service", "consumer").
+			Str("event", "rabbitmq_consumer_create_failed").
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
+			Msg("failed to create rabbitmq consumer")
 	}
 
 	productMsgs, err := consumer.Consume(
@@ -65,10 +83,15 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
+		logger.Fatal(err).
+			Str("service", "consumer").
+			Str("event", "product_consume_failed").
 			Str("queue", "product").
-			Msg("failed consume product queue")
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
+			Msg("failed to consume queue")
 	}
 
 	newsMsgs, err := consumer.Consume(
@@ -77,22 +100,47 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
+		logger.Fatal(err).
+			Str("service", "consumer").
+			Str("event", "news_consume_failed").
 			Str("queue", "news").
-			Msg("failed consume news queue")
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
+			Msg("failed to consume queue")
 	}
 
-	logger.Log.Info().
+	logger.Info().
+		Str("service", "consumer").
+		Str("event", "consumer_started").
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
 		Msg("rabbitmq consumer started")
+
+	// PRODUCT CONSUMER
 
 	go func() {
 
 		for msg := range productMsgs {
 
-			logger.Log.Info().
+			processStart := time.Now()
+
+			logger.Info().
+				Str("service", "consumer").
+				Str("event", "product_message_received").
 				Str("queue", "product").
-				Msg("product message received")
+				Int(
+					"retry_count",
+					rabbitmq.GetRetryCount(msg),
+				).
+				Msg("message received")
 
 			var product entity.Product
 
@@ -103,17 +151,36 @@ func main() {
 
 			if err != nil {
 
-				logger.Log.Error().
-					Err(err).
+				logger.Error(err).
+					Str("service", "consumer").
+					Str("event", "product_unmarshal_failed").
+					Str("queue", "product").
 					Bytes("payload", msg.Body).
-					Msg("failed unmarshal product payload")
+					Int64(
+						"duration_ms",
+						time.Since(processStart).Milliseconds(),
+					).
+					Msg("failed to unmarshal product payload")
+
+				_ = rabbitmq.RetryMessage(
+					consumer.Channel(),
+					"product",
+					msg,
+				)
+
+				_ = msg.Ack(false)
 
 				continue
 			}
 
+			// DELETE EVENT
+
 			if product.ID == 0 {
 
-				logger.Log.Info().
+				logger.Info().
+					Str("service", "consumer").
+					Str("event", "product_delete_received").
+					Str("queue", "product").
 					Bytes("payload", msg.Body).
 					Msg("delete product event received")
 
@@ -128,9 +195,24 @@ func main() {
 
 				if !ok {
 
-					logger.Log.Error().
+					logger.Error(nil).
+						Str("service", "consumer").
+						Str("event", "product_delete_missing_id").
+						Str("queue", "product").
 						Bytes("payload", msg.Body).
+						Int64(
+							"duration_ms",
+							time.Since(processStart).Milliseconds(),
+						).
 						Msg("missing id in delete product payload")
+
+					_ = rabbitmq.RetryMessage(
+						consumer.Channel(),
+						"product",
+						msg,
+					)
+
+					_ = msg.Ack(false)
 
 					continue
 				}
@@ -146,22 +228,52 @@ func main() {
 
 				if err != nil {
 
-					logger.Log.Error().
-						Err(err).
+					logger.Error(err).
+						Str("service", "consumer").
+						Str("event", "product_delete_failed").
+						Str("queue", "product").
 						Uint64("product_id", id).
-						Msg("failed delete product from elasticsearch")
+						Int64(
+							"duration_ms",
+							time.Since(processStart).Milliseconds(),
+						).
+						Msg("failed to delete product from elasticsearch")
+
+					_ = rabbitmq.RetryMessage(
+						consumer.Channel(),
+						"product",
+						msg,
+					)
+
+					_ = msg.Ack(false)
 
 					continue
 				}
 
-				logger.Log.Info().
+				logger.Info().
+					Str("service", "consumer").
+					Str("event", "product_deleted").
+					Str("queue", "product").
 					Uint64("product_id", id).
+					Dur(
+						"duration",
+						time.Since(processStart),
+					).
+					Int64(
+						"duration_ms",
+						time.Since(processStart).Milliseconds(),
+					).
 					Msg("product deleted from elasticsearch")
+
+				_ = msg.Ack(false)
 
 				continue
 			}
 
-			logger.Log.Info().
+			logger.Info().
+				Str("service", "consumer").
+				Str("event", "product_indexing").
+				Str("queue", "product").
 				Uint64("product_id", product.ID).
 				Msg("indexing product to elasticsearch")
 
@@ -172,27 +284,64 @@ func main() {
 
 			if err != nil {
 
-				logger.Log.Error().
-					Err(err).
+				logger.Error(err).
+					Str("service", "consumer").
+					Str("event", "product_index_failed").
+					Str("queue", "product").
 					Uint64("product_id", product.ID).
-					Msg("failed index product")
+					Int64(
+						"duration_ms",
+						time.Since(processStart).Milliseconds(),
+					).
+					Msg("failed to index product")
+
+				_ = rabbitmq.RetryMessage(
+					consumer.Channel(),
+					"product",
+					msg,
+				)
+
+				_ = msg.Ack(false)
 
 				continue
 			}
 
-			logger.Log.Info().
+			logger.Info().
+				Str("service", "consumer").
+				Str("event", "product_indexed").
+				Str("queue", "product").
 				Uint64("product_id", product.ID).
+				Dur(
+					"duration",
+					time.Since(processStart),
+				).
+				Int64(
+					"duration_ms",
+					time.Since(processStart).Milliseconds(),
+				).
 				Msg("product indexed successfully")
+
+			_ = msg.Ack(false)
 		}
 	}()
+
+	// NEWS CONSUMER
 
 	go func() {
 
 		for msg := range newsMsgs {
 
-			logger.Log.Info().
+			processStart := time.Now()
+
+			logger.Info().
+				Str("service", "consumer").
+				Str("event", "news_message_received").
 				Str("queue", "news").
-				Msg("news message received")
+				Int(
+					"retry_count",
+					rabbitmq.GetRetryCount(msg),
+				).
+				Msg("message received")
 
 			var news entity.News
 
@@ -203,17 +352,36 @@ func main() {
 
 			if err != nil {
 
-				logger.Log.Error().
-					Err(err).
+				logger.Error(err).
+					Str("service", "consumer").
+					Str("event", "news_unmarshal_failed").
+					Str("queue", "news").
 					Bytes("payload", msg.Body).
-					Msg("failed unmarshal news payload")
+					Int64(
+						"duration_ms",
+						time.Since(processStart).Milliseconds(),
+					).
+					Msg("failed to unmarshal news payload")
+
+				_ = rabbitmq.RetryMessage(
+					consumer.Channel(),
+					"news",
+					msg,
+				)
+
+				_ = msg.Ack(false)
 
 				continue
 			}
 
+			// DELETE EVENT
+
 			if news.ID == 0 {
 
-				logger.Log.Info().
+				logger.Info().
+					Str("service", "consumer").
+					Str("event", "news_delete_received").
+					Str("queue", "news").
 					Bytes("payload", msg.Body).
 					Msg("delete news event received")
 
@@ -228,9 +396,24 @@ func main() {
 
 				if !ok {
 
-					logger.Log.Error().
+					logger.Error(nil).
+						Str("service", "consumer").
+						Str("event", "news_delete_missing_id").
+						Str("queue", "news").
 						Bytes("payload", msg.Body).
+						Int64(
+							"duration_ms",
+							time.Since(processStart).Milliseconds(),
+						).
 						Msg("missing id in delete news payload")
+
+					_ = rabbitmq.RetryMessage(
+						consumer.Channel(),
+						"news",
+						msg,
+					)
+
+					_ = msg.Ack(false)
 
 					continue
 				}
@@ -246,22 +429,52 @@ func main() {
 
 				if err != nil {
 
-					logger.Log.Error().
-						Err(err).
+					logger.Error(err).
+						Str("service", "consumer").
+						Str("event", "news_delete_failed").
+						Str("queue", "news").
 						Uint64("news_id", id).
-						Msg("failed delete news from elasticsearch")
+						Int64(
+							"duration_ms",
+							time.Since(processStart).Milliseconds(),
+						).
+						Msg("failed to delete news from elasticsearch")
+
+					_ = rabbitmq.RetryMessage(
+						consumer.Channel(),
+						"news",
+						msg,
+					)
+
+					_ = msg.Ack(false)
 
 					continue
 				}
 
-				logger.Log.Info().
+				logger.Info().
+					Str("service", "consumer").
+					Str("event", "news_deleted").
+					Str("queue", "news").
 					Uint64("news_id", id).
+					Dur(
+						"duration",
+						time.Since(processStart),
+					).
+					Int64(
+						"duration_ms",
+						time.Since(processStart).Milliseconds(),
+					).
 					Msg("news deleted from elasticsearch")
+
+				_ = msg.Ack(false)
 
 				continue
 			}
 
-			logger.Log.Info().
+			logger.Info().
+				Str("service", "consumer").
+				Str("event", "news_indexing").
+				Str("queue", "news").
 				Uint64("news_id", news.ID).
 				Msg("indexing news to elasticsearch")
 
@@ -272,17 +485,44 @@ func main() {
 
 			if err != nil {
 
-				logger.Log.Error().
-					Err(err).
+				logger.Error(err).
+					Str("service", "consumer").
+					Str("event", "news_index_failed").
+					Str("queue", "news").
 					Uint64("news_id", news.ID).
-					Msg("failed index news")
+					Int64(
+						"duration_ms",
+						time.Since(processStart).Milliseconds(),
+					).
+					Msg("failed to index news")
+
+				_ = rabbitmq.RetryMessage(
+					consumer.Channel(),
+					"news",
+					msg,
+				)
+
+				_ = msg.Ack(false)
 
 				continue
 			}
 
-			logger.Log.Info().
+			logger.Info().
+				Str("service", "consumer").
+				Str("event", "news_indexed").
+				Str("queue", "news").
 				Uint64("news_id", news.ID).
+				Dur(
+					"duration",
+					time.Since(processStart),
+				).
+				Int64(
+					"duration_ms",
+					time.Since(processStart).Milliseconds(),
+				).
 				Msg("news indexed successfully")
+
+			_ = msg.Ack(false)
 		}
 	}()
 

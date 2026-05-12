@@ -1,34 +1,47 @@
 package rabbitmq
 
 import (
+	"time"
+
 	"content-hub/internal/logger"
 
-	"github.com/rabbitmq/amqp091-go"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Publisher struct {
-	ch *amqp091.Channel
+	ch *amqp.Channel
 }
 
 func NewPublisher(
-	conn *amqp091.Connection,
+	conn *amqp.Connection,
 ) (*Publisher, error) {
+
+	start := time.Now()
 
 	ch, err := conn.Channel()
 
+	duration := time.Since(start).Milliseconds()
+
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
+			Str("service", "rabbitmq").
+			Str("event", "publisher_channel_create_failed").
+			Int64("duration_ms", duration).
 			Msg("failed create rabbitmq publisher channel")
 
 		return nil, err
 	}
 
-	logger.Log.Info().
+	logger.Info().
+		Str("service", "rabbitmq").
+		Str("event", "publisher_initialized").
+		Int64("duration_ms", duration).
 		Msg("rabbitmq publisher initialized")
 
-	return &Publisher{ch}, nil
+	return &Publisher{
+		ch: ch,
+	}, nil
 }
 
 func (p *Publisher) Publish(
@@ -36,21 +49,23 @@ func (p *Publisher) Publish(
 	body []byte,
 ) error {
 
-	_, err := p.ch.QueueDeclare(
+	start := time.Now()
+
+	err := DeclareTopology(
+		p.ch,
 		queue,
-		true,
-		false,
-		false,
-		false,
-		nil,
 	)
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		duration := time.Since(start).Milliseconds()
+
+		logger.Error(err).
+			Str("service", "rabbitmq").
+			Str("event", "topology_declare_failed").
 			Str("queue", queue).
-			Msg("failed declare rabbitmq queue")
+			Int64("duration_ms", duration).
+			Msg("failed declare rabbitmq topology")
 
 		return err
 	}
@@ -60,25 +75,32 @@ func (p *Publisher) Publish(
 		queue,
 		false,
 		false,
-		amqp091.Publishing{
+		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        body,
 		},
 	)
 
+	duration := time.Since(start).Milliseconds()
+
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
+			Str("service", "rabbitmq").
+			Str("event", "message_publish_failed").
 			Str("queue", queue).
+			Int64("duration_ms", duration).
 			Msg("failed publish rabbitmq message")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
+		Str("service", "rabbitmq").
+		Str("event", "message_published").
 		Str("queue", queue).
-		Msg("message published to rabbitmq")
+		Int64("duration_ms", duration).
+		Msg("message published")
 
 	return nil
 }
