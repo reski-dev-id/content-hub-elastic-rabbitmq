@@ -1,6 +1,8 @@
 package rabbitmq
 
 import (
+	"time"
+
 	"content-hub/internal/logger"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -28,16 +30,20 @@ func RetryMessage(
 	msg amqp.Delivery,
 ) error {
 
+	start := time.Now()
+
 	retryCount := GetRetryCount(msg)
 
 	if retryCount >= MaxRetry {
 
 		logger.Error(nil).
+			Str("service", "rabbitmq").
+			Str("event", "message_moved_to_dlq").
 			Str("queue", queue).
 			Int("retry_count", retryCount).
 			Msg("message moved to dead letter queue")
 
-		return ch.Publish(
+		err := ch.Publish(
 			"",
 			queue+".dlq",
 			false,
@@ -50,16 +56,43 @@ func RetryMessage(
 				},
 			},
 		)
+
+		duration := time.Since(start).Milliseconds()
+
+		if err != nil {
+
+			logger.Error(err).
+				Str("service", "rabbitmq").
+				Str("event", "dlq_publish_failed").
+				Str("queue", queue).
+				Int("retry_count", retryCount).
+				Int64("duration_ms", duration).
+				Msg("failed publish message to dlq")
+
+			return err
+		}
+
+		logger.Info().
+			Str("service", "rabbitmq").
+			Str("event", "dlq_publish_success").
+			Str("queue", queue).
+			Int("retry_count", retryCount).
+			Int64("duration_ms", duration).
+			Msg("message published to dlq")
+
+		return nil
 	}
 
 	retryCount++
 
 	logger.Warn().
+		Str("service", "rabbitmq").
+		Str("event", "message_retry").
 		Str("queue", queue).
 		Int("retry_count", retryCount).
 		Msg("retrying message")
 
-	return ch.Publish(
+	err := ch.Publish(
 		"",
 		queue+".retry",
 		false,
@@ -72,4 +105,29 @@ func RetryMessage(
 			},
 		},
 	)
+
+	duration := time.Since(start).Milliseconds()
+
+	if err != nil {
+
+		logger.Error(err).
+			Str("service", "rabbitmq").
+			Str("event", "retry_publish_failed").
+			Str("queue", queue).
+			Int("retry_count", retryCount).
+			Int64("duration_ms", duration).
+			Msg("failed publish retry message")
+
+		return err
+	}
+
+	logger.Info().
+		Str("service", "rabbitmq").
+		Str("event", "retry_publish_success").
+		Str("queue", queue).
+		Int("retry_count", retryCount).
+		Int64("duration_ms", duration).
+		Msg("retry message published")
+
+	return nil
 }

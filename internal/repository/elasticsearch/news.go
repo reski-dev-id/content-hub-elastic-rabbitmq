@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"time"
 
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/logger"
@@ -19,7 +20,9 @@ type NewsRepository struct {
 func NewNewsRepository(
 	client *es8.Client,
 ) *NewsRepository {
-	return &NewsRepository{client}
+	return &NewsRepository{
+		client: client,
+	}
 }
 
 func (r *NewsRepository) Index(
@@ -27,12 +30,22 @@ func (r *NewsRepository) Index(
 	news *entity.News,
 ) error {
 
-	data, err := json.Marshal(news)
+	start := time.Now()
+
+	data, err := json.Marshal(
+		news,
+	)
 
 	if err != nil {
 
 		logger.Error(err).
+			Str("service", "elasticsearch").
+			Str("event", "news_marshal_failed").
 			Uint64("news_id", news.ID).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed marshal news document")
 
 		return err
@@ -51,14 +64,30 @@ func (r *NewsRepository) Index(
 	if err != nil {
 
 		logger.Error(err).
+			Str("service", "elasticsearch").
+			Str("event", "news_index_failed").
 			Uint64("news_id", news.ID).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed index news document")
 
 		return err
 	}
 
 	logger.Info().
+		Str("service", "elasticsearch").
+		Str("event", "news_indexed").
 		Uint64("news_id", news.ID).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
 		Msg("news indexed to elasticsearch")
 
 	return nil
@@ -68,6 +97,8 @@ func (r *NewsRepository) Delete(
 	ctx context.Context,
 	id uint64,
 ) error {
+
+	start := time.Now()
 
 	_, err := r.client.Delete(
 		"news",
@@ -79,14 +110,30 @@ func (r *NewsRepository) Delete(
 	if err != nil {
 
 		logger.Error(err).
+			Str("service", "elasticsearch").
+			Str("event", "news_delete_failed").
 			Uint64("news_id", id).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed delete news document")
 
 		return err
 	}
 
 	logger.Info().
+		Str("service", "elasticsearch").
+		Str("event", "news_deleted").
 		Uint64("news_id", id).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
 		Msg("news deleted from elasticsearch")
 
 	return nil
