@@ -3,6 +3,7 @@ package usecase
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/domain/repository"
@@ -17,12 +18,20 @@ type newsUsecase struct {
 func NewNewsUsecase(
 	r repository.NewsRepository,
 ) domain.NewsUsecase {
-	return &newsUsecase{r}
+	return &newsUsecase{
+		repo: r,
+	}
 }
 
-func (u *newsUsecase) Create(n *entity.News) error {
+func (u *newsUsecase) Create(
+	n *entity.News,
+) error {
 
-	payloadBytes, _ := json.Marshal(n)
+	start := time.Now()
+
+	payloadBytes, _ := json.Marshal(
+		n,
+	)
 
 	event := &entity.OutboxEvent{
 		AggregateType: "news",
@@ -31,20 +40,39 @@ func (u *newsUsecase) Create(n *entity.News) error {
 		Status:        "pending",
 	}
 
-	err := u.repo.CreateWithOutbox(n, event)
+	err := u.repo.CreateWithOutbox(
+		n,
+		event,
+	)
 
 	if err != nil {
 
 		logger.Error(err).
+			Str("service", "usecase").
+			Str("event", "news_create_failed").
 			Str("title", n.Title).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed to create news")
 
 		return err
 	}
 
 	logger.Info().
+		Str("service", "usecase").
+		Str("event", "news_created").
 		Uint64("news_id", n.ID).
 		Str("title", n.Title).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
 		Msg("news created")
 
 	return nil
@@ -56,6 +84,8 @@ func (u *newsUsecase) GetAll(
 	categoryID *uint64,
 ) ([]entity.News, int64, error) {
 
+	start := time.Now()
+
 	news, err := u.repo.FindAll(
 		page,
 		limit,
@@ -65,55 +95,107 @@ func (u *newsUsecase) GetAll(
 	if err != nil {
 
 		logger.Error(err).
+			Str("service", "usecase").
+			Str("event", "news_fetch_failed").
 			Int("page", page).
 			Int("limit", limit).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed to fetch news")
 
 		return nil, 0, err
 	}
 
-	total, err := u.repo.Count(categoryID)
+	total, err := u.repo.Count(
+		categoryID,
+	)
 
 	if err != nil {
 
 		logger.Error(err).
+			Str("service", "usecase").
+			Str("event", "news_count_failed").
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed to count news")
 
 		return nil, 0, err
 	}
 
 	logger.Info().
+		Str("service", "usecase").
+		Str("event", "news_fetched").
 		Int("page", page).
 		Int("limit", limit).
 		Int64("total", total).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
 		Msg("news fetched")
 
 	return news, total, nil
 }
 
-func (u *newsUsecase) GetByID(id uint64) (*entity.News, error) {
+func (u *newsUsecase) GetByID(
+	id uint64,
+) (*entity.News, error) {
 
-	news, err := u.repo.FindByID(id)
+	start := time.Now()
+
+	news, err := u.repo.FindByID(
+		id,
+	)
 
 	if err != nil {
 
 		logger.Error(err).
+			Str("service", "usecase").
+			Str("event", "news_find_by_id_failed").
 			Uint64("news_id", id).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed to get news by id")
 
 		return nil, err
 	}
 
 	logger.Info().
+		Str("service", "usecase").
+		Str("event", "news_found").
 		Uint64("news_id", id).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
 		Msg("news fetched by id")
 
 	return news, nil
 }
 
-func (u *newsUsecase) Update(n *entity.News) error {
+func (u *newsUsecase) Update(
+	n *entity.News,
+) error {
 
-	payloadBytes, _ := json.Marshal(n)
+	start := time.Now()
+
+	payloadBytes, _ := json.Marshal(
+		n,
+	)
 
 	event := &entity.OutboxEvent{
 		AggregateType: "news",
@@ -123,28 +205,54 @@ func (u *newsUsecase) Update(n *entity.News) error {
 		Status:        "pending",
 	}
 
-	err := u.repo.UpdateWithOutbox(n, event)
+	err := u.repo.UpdateWithOutbox(
+		n,
+		event,
+	)
 
 	if err != nil {
 
 		logger.Error(err).
+			Str("service", "usecase").
+			Str("event", "news_update_failed").
 			Uint64("news_id", n.ID).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed to update news")
 
 		return err
 	}
 
 	logger.Info().
+		Str("service", "usecase").
+		Str("event", "news_updated").
 		Uint64("news_id", n.ID).
 		Str("title", n.Title).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
 		Msg("news updated")
 
 	return nil
 }
 
-func (u *newsUsecase) Delete(id uint64) error {
+func (u *newsUsecase) Delete(
+	id uint64,
+) error {
 
-	payload := fmt.Sprintf(`{"id": %d}`, id)
+	start := time.Now()
+
+	payload := fmt.Sprintf(
+		`{"id": %d}`,
+		id,
+	)
 
 	event := &entity.OutboxEvent{
 		AggregateType: "news",
@@ -154,19 +262,38 @@ func (u *newsUsecase) Delete(id uint64) error {
 		Status:        "pending",
 	}
 
-	err := u.repo.DeleteWithOutbox(id, event)
+	err := u.repo.DeleteWithOutbox(
+		id,
+		event,
+	)
 
 	if err != nil {
 
 		logger.Error(err).
+			Str("service", "usecase").
+			Str("event", "news_delete_failed").
 			Uint64("news_id", id).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
 			Msg("failed to delete news")
 
 		return err
 	}
 
 	logger.Info().
+		Str("service", "usecase").
+		Str("event", "news_deleted").
 		Uint64("news_id", id).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
 		Msg("news deleted")
 
 	return nil

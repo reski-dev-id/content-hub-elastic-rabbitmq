@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
+	"content-hub/internal/logger"
 
 	es8 "github.com/elastic/go-elasticsearch/v8"
 )
@@ -30,7 +33,18 @@ func (r *SearchRepository) Search(
 	limit int,
 ) (map[string]interface{}, error) {
 
+	start := time.Now()
+
 	from := (page - 1) * limit
+
+	logger.Info().
+		Str("service", "elasticsearch").
+		Str("event", "search_started").
+		Str("index", index).
+		Str("query", q).
+		Int("page", page).
+		Int("limit", limit).
+		Msg("starting elasticsearch search")
 
 	must := []map[string]interface{}{
 		{
@@ -46,7 +60,16 @@ func (r *SearchRepository) Search(
 	}
 
 	if categoryID != nil {
-		must = append(must,
+
+		logger.Info().
+			Str("service", "elasticsearch").
+			Str("event", "search_category_filter").
+			Str("index", index).
+			Uint64("category_id", *categoryID).
+			Msg("applying category filter")
+
+		must = append(
+			must,
 			map[string]interface{}{
 				"term": map[string]interface{}{
 					"category_id": *categoryID,
@@ -65,7 +88,24 @@ func (r *SearchRepository) Search(
 		},
 	}
 
-	body, _ := json.Marshal(query)
+	body, err := json.Marshal(
+		query,
+	)
+
+	if err != nil {
+
+		logger.Error(err).
+			Str("service", "elasticsearch").
+			Str("event", "search_query_marshal_failed").
+			Str("index", index).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
+			Msg("failed marshal elasticsearch query")
+
+		return nil, err
+	}
 
 	res, err := r.client.Search(
 		r.client.Search.WithContext(ctx),
@@ -77,19 +117,90 @@ func (r *SearchRepository) Search(
 	)
 
 	if err != nil {
+
+		logger.Error(err).
+			Str("service", "elasticsearch").
+			Str("event", "search_request_failed").
+			Str("index", index).
+			Str("query", q).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
+			Msg("failed execute elasticsearch search")
+
 		return nil, err
 	}
 
 	defer res.Body.Close()
 
 	if res.IsError() {
-		return nil, fmt.Errorf(res.String())
+
+		logger.Error(nil).
+			Str("service", "elasticsearch").
+			Str("event", "search_response_error").
+			Str("index", index).
+			Str("query", q).
+			Str("response", res.String()).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
+			Msg("elasticsearch returned error response")
+
+		return nil, fmt.Errorf(
+			res.String(),
+		)
 	}
 
 	var result map[string]interface{}
 
-	err = json.NewDecoder(res.Body).
-		Decode(&result)
+	err = json.NewDecoder(
+		res.Body,
+	).Decode(
+		&result,
+	)
 
-	return result, err
+	if err != nil {
+
+		logger.Error(err).
+			Str("service", "elasticsearch").
+			Str("event", "search_decode_failed").
+			Str("index", index).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
+			Msg("failed decode elasticsearch response")
+
+		return nil, err
+	}
+
+	hits := result["hits"].(map[string]interface{})
+
+	totalMap := hits["total"].(map[string]interface{})
+
+	total := int64(
+		totalMap["value"].(float64),
+	)
+
+	logger.Info().
+		Str("service", "elasticsearch").
+		Str("event", "search_completed").
+		Str("index", index).
+		Str("query", q).
+		Int("page", page).
+		Int("limit", limit).
+		Int64("total_hits", total).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
+		Msg("elasticsearch search completed")
+
+	return result, nil
 }
