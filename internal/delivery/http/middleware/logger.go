@@ -20,7 +20,7 @@ func Logger() gin.HandlerFunc {
 
 		requestID, _ := c.Get(RequestIDKey)
 
-		logger.Log.Info().
+		logger.Info().
 			Str("request_id", requestID.(string)).
 			Str("method", c.Request.Method).
 			Str("path", c.Request.URL.Path).

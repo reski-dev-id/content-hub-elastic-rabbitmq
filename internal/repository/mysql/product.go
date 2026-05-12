@@ -47,8 +47,7 @@ func (r *productRepo) Create(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Str("title", p.Title).
 			Msg("failed create product")
 
@@ -67,8 +66,7 @@ func (r *productRepo) CreateWithOutbox(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed begin transaction create product")
 
 		return err
@@ -96,8 +94,7 @@ func (r *productRepo) CreateWithOutbox(
 
 		tx.Rollback()
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Str("title", p.Title).
 			Msg("failed insert product")
 
@@ -110,8 +107,7 @@ func (r *productRepo) CreateWithOutbox(
 
 		tx.Rollback()
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed get product last insert id")
 
 		return err
@@ -141,8 +137,7 @@ func (r *productRepo) CreateWithOutbox(
 
 		tx.Rollback()
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", uint64(productID)).
 			Msg("failed insert outbox product event")
 
@@ -153,8 +148,7 @@ func (r *productRepo) CreateWithOutbox(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", uint64(productID)).
 			Msg("failed commit transaction create product")
 
@@ -189,8 +183,7 @@ func (r *productRepo) FindAll(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Int("page", page).
 			Int("limit", limit).
 			Msg("failed fetch products")
@@ -219,8 +212,7 @@ func (r *productRepo) Count(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed count products")
 
 		return 0, err
@@ -243,8 +235,7 @@ func (r *productRepo) FindByID(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", id).
 			Msg("failed find product by id")
 
@@ -281,8 +272,7 @@ func (r *productRepo) Update(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", p.ID).
 			Msg("failed update product")
 
@@ -303,8 +293,7 @@ func (r *productRepo) Delete(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", id).
 			Msg("failed delete product")
 
@@ -323,8 +312,7 @@ func (r *productRepo) DeleteWithOutbox(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed begin transaction delete product")
 
 		return err
@@ -339,8 +327,7 @@ func (r *productRepo) DeleteWithOutbox(
 
 		tx.Rollback()
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", id).
 			Msg("failed delete product transaction")
 
@@ -367,8 +354,7 @@ func (r *productRepo) DeleteWithOutbox(
 
 		tx.Rollback()
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", id).
 			Msg("failed insert outbox delete product")
 
@@ -379,8 +365,7 @@ func (r *productRepo) DeleteWithOutbox(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", id).
 			Msg("failed commit delete product")
 
@@ -399,8 +384,7 @@ func (r *productRepo) UpdateWithOutbox(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed begin transaction update product")
 
 		return err
@@ -428,8 +412,7 @@ func (r *productRepo) UpdateWithOutbox(
 
 		tx.Rollback()
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", p.ID).
 			Msg("failed update product transaction")
 
@@ -456,8 +439,7 @@ func (r *productRepo) UpdateWithOutbox(
 
 		tx.Rollback()
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", p.ID).
 			Msg("failed insert outbox update product")
 
@@ -468,8 +450,7 @@ func (r *productRepo) UpdateWithOutbox(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", p.ID).
 			Msg("failed commit update product")
 

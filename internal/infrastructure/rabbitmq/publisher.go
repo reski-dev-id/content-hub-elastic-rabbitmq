@@ -18,14 +18,13 @@ func NewPublisher(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed create rabbitmq publisher channel")
 
 		return nil, err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Msg("rabbitmq publisher initialized")
 
 	return &Publisher{
@@ -60,15 +59,14 @@ func (p *Publisher) Publish(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Str("queue", queue).
 			Msg("failed publish rabbitmq message")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Str("queue", queue).
 		Msg("message published")
 

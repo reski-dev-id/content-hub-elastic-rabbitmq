@@ -25,7 +25,7 @@ func NewPoller(
 
 func (p *Poller) Start() {
 
-	logger.Log.Info().
+	logger.Info().
 		Msg("outbox poller started")
 
 	for {
@@ -34,8 +34,7 @@ func (p *Poller) Start() {
 
 		if err != nil {
 
-			logger.Log.Error().
-				Err(err).
+			logger.Error(err).
 				Msg("failed fetch pending outbox events")
 
 			time.Sleep(2 * time.Second)
@@ -45,14 +44,14 @@ func (p *Poller) Start() {
 
 		if len(events) > 0 {
 
-			logger.Log.Info().
+			logger.Info().
 				Int("count", len(events)).
 				Msg("pending outbox events fetched")
 		}
 
 		for _, e := range events {
 
-			logger.Log.Info().
+			logger.Info().
 				Uint64("event_id", e.ID).
 				Str("event_type", e.EventType).
 				Str("aggregate_type", e.AggregateType).
@@ -65,15 +64,14 @@ func (p *Poller) Start() {
 
 			if err != nil {
 
-				logger.Log.Error().
-					Err(err).
+				logger.Error(err).
 					Uint64("event_id", e.ID).
 					Msg("failed publish rabbitmq message")
 
 				continue
 			}
 
-			logger.Log.Info().
+			logger.Info().
 				Uint64("event_id", e.ID).
 				Msg("outbox event published")
 
@@ -81,15 +79,14 @@ func (p *Poller) Start() {
 
 			if err != nil {
 
-				logger.Log.Error().
-					Err(err).
+				logger.Error(err).
 					Uint64("event_id", e.ID).
 					Msg("failed mark outbox event as sent")
 
 				continue
 			}
 
-			logger.Log.Info().
+			logger.Info().
 				Uint64("event_id", e.ID).
 				Msg("outbox event marked as sent")
 		}

@@ -45,8 +45,7 @@ func (r *newsRepo) Create(n *entity.News) error {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Str("title", n.Title).
 			Msg("failed create news")
 
@@ -65,8 +64,7 @@ func (r *newsRepo) CreateWithOutbox(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed begin transaction create news")
 
 		return err
@@ -96,8 +94,7 @@ func (r *newsRepo) CreateWithOutbox(
 
 		tx.Rollback()
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Str("title", n.Title).
 			Msg("failed insert news")
 
@@ -110,8 +107,7 @@ func (r *newsRepo) CreateWithOutbox(
 
 		tx.Rollback()
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed get news last insert id")
 
 		return err
@@ -141,8 +137,7 @@ func (r *newsRepo) CreateWithOutbox(
 
 		tx.Rollback()
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", uint64(newsID)).
 			Msg("failed insert outbox event")
 
@@ -153,8 +148,7 @@ func (r *newsRepo) CreateWithOutbox(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", uint64(newsID)).
 			Msg("failed commit transaction create news")
 
@@ -189,8 +183,7 @@ func (r *newsRepo) FindAll(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Int("page", page).
 			Int("limit", limit).
 			Msg("failed fetch news")
@@ -217,8 +210,7 @@ func (r *newsRepo) Count(categoryID *uint64) (int64, error) {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed count news")
 
 		return 0, err
@@ -239,8 +231,7 @@ func (r *newsRepo) FindByID(id uint64) (*entity.News, error) {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", id).
 			Msg("failed find news by id")
 
@@ -277,8 +268,7 @@ func (r *newsRepo) Update(n *entity.News) error {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", n.ID).
 			Msg("failed update news")
 
@@ -297,8 +287,7 @@ func (r *newsRepo) UpdateWithOutbox(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed begin transaction update news")
 
 		return err
@@ -328,8 +317,7 @@ func (r *newsRepo) UpdateWithOutbox(
 
 		tx.Rollback()
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", n.ID).
 			Msg("failed update news transaction")
 
@@ -356,8 +344,7 @@ func (r *newsRepo) UpdateWithOutbox(
 
 		tx.Rollback()
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", n.ID).
 			Msg("failed insert outbox update news")
 
@@ -368,8 +355,7 @@ func (r *newsRepo) UpdateWithOutbox(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", n.ID).
 			Msg("failed commit update news")
 
@@ -388,8 +374,7 @@ func (r *newsRepo) Delete(id uint64) error {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", id).
 			Msg("failed delete news")
 
@@ -408,8 +393,7 @@ func (r *newsRepo) DeleteWithOutbox(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed begin transaction delete news")
 
 		return err
@@ -424,8 +408,7 @@ func (r *newsRepo) DeleteWithOutbox(
 
 		tx.Rollback()
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", id).
 			Msg("failed delete news transaction")
 
@@ -452,8 +435,7 @@ func (r *newsRepo) DeleteWithOutbox(
 
 		tx.Rollback()
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", id).
 			Msg("failed insert outbox delete news")
 
@@ -464,8 +446,7 @@ func (r *newsRepo) DeleteWithOutbox(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", id).
 			Msg("failed commit delete news")
 

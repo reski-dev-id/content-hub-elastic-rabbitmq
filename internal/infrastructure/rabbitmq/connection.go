@@ -12,14 +12,13 @@ func NewRabbitMQ(url string) (*amqp.Connection, error) {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed connect rabbitmq")
 
 		return nil, err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Msg("rabbitmq connected")
 
 	return conn, nil

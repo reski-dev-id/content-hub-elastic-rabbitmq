@@ -21,9 +21,8 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
-			Msg("failed connect mysql")
+		logger.Fatal(err).
+			Msg("failed to connect mysql")
 	}
 
 	rmqConn, err := rabbitmq.NewRabbitMQ(
@@ -32,9 +31,8 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
-			Msg("failed connect rabbitmq")
+		logger.Fatal(err).
+			Msg("failed to connect rabbitmq")
 	}
 
 	publisher, err := rabbitmq.NewPublisher(
@@ -43,16 +41,15 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
-			Msg("failed create rabbitmq publisher")
+		logger.Fatal(err).
+			Msg("failed to create rabbitmq publisher")
 	}
 
 	outboxRepo := mysqlRepo.NewOutboxRepository(
 		db,
 	)
 
-	logger.Log.Info().
+	logger.Info().
 		Msg("starting outbox poller")
 
 	poller := outbox.NewPoller(

@@ -20,7 +20,7 @@ func RecoveryMiddleware() gin.HandlerFunc {
 
 				requestID, _ := c.Get(RequestIDKey)
 
-				logger.Log.Error().
+				logger.Error(nil).
 					Str("request_id", requestID.(string)).
 					Interface("panic", err).
 					Str("method", c.Request.Method).

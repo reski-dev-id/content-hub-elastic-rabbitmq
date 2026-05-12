@@ -35,15 +35,14 @@ func (u *newsUsecase) Create(n *entity.News) error {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Str("title", n.Title).
 			Msg("failed to create news")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Uint64("news_id", n.ID).
 		Str("title", n.Title).
 		Msg("news created")
@@ -65,8 +64,7 @@ func (u *newsUsecase) GetAll(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Int("page", page).
 			Int("limit", limit).
 			Msg("failed to fetch news")
@@ -78,14 +76,13 @@ func (u *newsUsecase) GetAll(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed to count news")
 
 		return nil, 0, err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Int("page", page).
 		Int("limit", limit).
 		Int64("total", total).
@@ -100,15 +97,14 @@ func (u *newsUsecase) GetByID(id uint64) (*entity.News, error) {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", id).
 			Msg("failed to get news by id")
 
 		return nil, err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Uint64("news_id", id).
 		Msg("news fetched by id")
 
@@ -131,15 +127,14 @@ func (u *newsUsecase) Update(n *entity.News) error {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", n.ID).
 			Msg("failed to update news")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Uint64("news_id", n.ID).
 		Str("title", n.Title).
 		Msg("news updated")
@@ -163,15 +158,14 @@ func (u *newsUsecase) Delete(id uint64) error {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", id).
 			Msg("failed to delete news")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Uint64("news_id", id).
 		Msg("news deleted")
 

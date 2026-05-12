@@ -32,7 +32,7 @@ func RetryMessage(
 
 	if retryCount >= MaxRetry {
 
-		logger.Log.Error().
+		logger.Error(nil).
 			Str("queue", queue).
 			Int("retry_count", retryCount).
 			Msg("message moved to dead letter queue")
@@ -54,7 +54,7 @@ func RetryMessage(
 
 	retryCount++
 
-	logger.Log.Warn().
+	logger.Warn().
 		Str("queue", queue).
 		Int("retry_count", retryCount).
 		Msg("retrying message")

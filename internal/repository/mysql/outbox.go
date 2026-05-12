@@ -34,8 +34,7 @@ func (r *outboxRepo) FindPending(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Int("limit", limit).
 			Msg("failed fetch pending outbox events")
 
@@ -54,8 +53,7 @@ func (r *outboxRepo) MarkAsSent(id uint64) error {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("event_id", id).
 			Msg("failed mark outbox event as sent")
 

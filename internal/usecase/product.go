@@ -35,15 +35,14 @@ func (u *productUsecase) Create(p *entity.Product) error {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Str("title", p.Title).
 			Msg("failed to create product")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Uint64("product_id", p.ID).
 		Str("title", p.Title).
 		Msg("product created")
@@ -65,8 +64,7 @@ func (u *productUsecase) GetAll(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Int("page", page).
 			Int("limit", limit).
 			Msg("failed to fetch products")
@@ -78,14 +76,13 @@ func (u *productUsecase) GetAll(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed to count products")
 
 		return nil, 0, err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Int("page", page).
 		Int("limit", limit).
 		Int64("total", total).
@@ -100,15 +97,14 @@ func (u *productUsecase) GetByID(id uint64) (*entity.Product, error) {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", id).
 			Msg("failed to get product by id")
 
 		return nil, err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Uint64("product_id", id).
 		Msg("product fetched by id")
 
@@ -131,15 +127,14 @@ func (u *productUsecase) Update(p *entity.Product) error {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", p.ID).
 			Msg("failed to update product")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Uint64("product_id", p.ID).
 		Str("title", p.Title).
 		Msg("product updated")
@@ -163,15 +158,14 @@ func (u *productUsecase) Delete(id uint64) error {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", id).
 			Msg("failed to delete product")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Uint64("product_id", id).
 		Msg("product deleted")
 
