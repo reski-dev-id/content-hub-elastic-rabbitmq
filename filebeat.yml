@@ -10,6 +10,10 @@ processors:
 setup.kibana:
   host: "http://kibana:5601"
 
+setup.template.enabled: true
+setup.template.name: "logs-content-hub"
+setup.template.pattern: "logs-content-hub-*"
+
 setup.template.settings:
   index.number_of_shards: 1
 
