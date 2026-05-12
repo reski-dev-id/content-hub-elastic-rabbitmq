@@ -31,8 +31,7 @@ func (r *ProductRepository) Index(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", product.ID).
 			Msg("failed marshal product document")
 
@@ -51,15 +50,14 @@ func (r *ProductRepository) Index(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", product.ID).
 			Msg("failed index product document")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Uint64("product_id", product.ID).
 		Msg("product indexed to elasticsearch")
 
@@ -80,15 +78,14 @@ func (r *ProductRepository) Delete(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("product_id", id).
 			Msg("failed delete product document")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Uint64("product_id", id).
 		Msg("product deleted from elasticsearch")
 

@@ -18,14 +18,13 @@ func NewConsumer(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed create rabbitmq consumer channel")
 
 		return nil, err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Msg("rabbitmq consumer initialized")
 
 	return &Consumer{
@@ -58,15 +57,14 @@ func (c *Consumer) Consume(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Str("queue", queue).
 			Msg("failed consume rabbitmq queue")
 
 		return nil, err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Str("queue", queue).
 		Msg("rabbitmq consumer subscribed")
 

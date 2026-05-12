@@ -26,8 +26,7 @@ func DeclareTopology(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Str("queue", queue).
 			Msg("failed declare main queue")
 
@@ -50,8 +49,7 @@ func DeclareTopology(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Str("queue", queue+".retry").
 			Msg("failed declare retry queue")
 
@@ -71,15 +69,14 @@ func DeclareTopology(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Str("queue", queue+".dlq").
 			Msg("failed declare dead letter queue")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Str("queue", queue).
 		Msg("rabbitmq topology declared")
 

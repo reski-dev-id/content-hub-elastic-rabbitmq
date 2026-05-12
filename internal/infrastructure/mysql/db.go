@@ -14,14 +14,13 @@ func NewDB(dsn string) (*sqlx.DB, error) {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
-			Msg("failed connect mysql")
+		logger.Error(err).
+			Msg("failed to connect mysql")
 
 		return nil, err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Msg("mysql connected")
 
 	return db, nil

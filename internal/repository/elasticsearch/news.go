@@ -31,8 +31,7 @@ func (r *NewsRepository) Index(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", news.ID).
 			Msg("failed marshal news document")
 
@@ -51,15 +50,14 @@ func (r *NewsRepository) Index(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", news.ID).
 			Msg("failed index news document")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Uint64("news_id", news.ID).
 		Msg("news indexed to elasticsearch")
 
@@ -80,15 +78,14 @@ func (r *NewsRepository) Delete(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Uint64("news_id", id).
 			Msg("failed delete news document")
 
 		return err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Uint64("news_id", id).
 		Msg("news deleted from elasticsearch")
 

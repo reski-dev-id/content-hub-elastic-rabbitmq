@@ -45,8 +45,7 @@ func (u *searchUsecase) Search(
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Str("query", q).
 			Str("type", searchType).
 			Int("page", page).
@@ -74,7 +73,7 @@ func (u *searchUsecase) Search(
 		response = append(response, source)
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Str("query", q).
 		Str("type", searchType).
 		Int("page", page).

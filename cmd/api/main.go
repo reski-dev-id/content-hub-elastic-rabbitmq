@@ -37,8 +37,7 @@ func main() {
 	db, err := mysql.NewDB(cfg.DBUrl)
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
+		logger.Fatal(err).
 			Msg("failed to connect mysql")
 	}
 
@@ -48,8 +47,7 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
+		logger.Fatal(err).
 			Msg("failed to connect elasticsearch")
 	}
 
@@ -59,8 +57,7 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
+		logger.Fatal(err).
 			Msg("failed to connect rabbitmq")
 	}
 
@@ -120,15 +117,14 @@ func main() {
 
 	go func() {
 
-		logger.Log.Info().
+		logger.Info().
 			Str("port", cfg.AppPort).
 			Msg("server running")
 
 		if err := server.ListenAndServe(); err != nil &&
 			err != http.ErrServerClosed {
 
-			logger.Log.Fatal().
-				Err(err).
+			logger.Fatal(err).
 				Msg("failed to start server")
 		}
 	}()
@@ -143,7 +139,7 @@ func main() {
 
 	<-quit
 
-	logger.Log.Info().
+	logger.Info().
 		Msg("shutting down server")
 
 	ctx, cancel := context.WithTimeout(
@@ -155,25 +151,22 @@ func main() {
 
 	if err := server.Shutdown(ctx); err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
+		logger.Fatal(err).
 			Msg("failed to shutdown server")
 	}
 
 	if err := db.Close(); err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed to close mysql")
 	}
 
 	if err := rabbitConn.Close(); err != nil {
 
-		logger.Log.Error().
-			Err(err).
+		logger.Error(err).
 			Msg("failed to close rabbitmq")
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Msg("server exited properly")
 }

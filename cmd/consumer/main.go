@@ -24,9 +24,8 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
-			Msg("failed connect elasticsearch")
+		logger.Fatal(err).
+			Msg("failed to connect elasticsearch")
 	}
 
 	productES := esRepo.NewProductRepository(
@@ -43,9 +42,8 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
-			Msg("failed connect rabbitmq")
+		logger.Fatal(err).
+			Msg("failed to connect rabbitmq")
 	}
 
 	consumer, err := rabbitmq.NewConsumer(
@@ -54,9 +52,8 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
-			Msg("failed create rabbitmq consumer")
+		logger.Fatal(err).
+			Msg("failed to create rabbitmq consumer")
 	}
 
 	productMsgs, err := consumer.Consume(
@@ -65,10 +62,9 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
+		logger.Fatal(err).
 			Str("queue", "product").
-			Msg("failed consume product queue")
+			Msg("failed to consume queue")
 	}
 
 	newsMsgs, err := consumer.Consume(
@@ -77,13 +73,12 @@ func main() {
 
 	if err != nil {
 
-		logger.Log.Fatal().
-			Err(err).
+		logger.Fatal(err).
 			Str("queue", "news").
-			Msg("failed consume news queue")
+			Msg("failed to consume queue")
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Msg("rabbitmq consumer started")
 
 	// PRODUCT CONSUMER
@@ -92,13 +87,13 @@ func main() {
 
 		for msg := range productMsgs {
 
-			logger.Log.Info().
+			logger.Info().
 				Str("queue", "product").
 				Int(
 					"retry_count",
 					rabbitmq.GetRetryCount(msg),
 				).
-				Msg("product message received")
+				Msg("message received")
 
 			var product entity.Product
 
@@ -109,10 +104,9 @@ func main() {
 
 			if err != nil {
 
-				logger.Log.Error().
-					Err(err).
+				logger.Error(err).
 					Bytes("payload", msg.Body).
-					Msg("failed unmarshal product payload")
+					Msg("failed to unmarshal product payload")
 
 				_ = rabbitmq.RetryMessage(
 					consumer.Channel(),
@@ -129,7 +123,7 @@ func main() {
 
 			if product.ID == 0 {
 
-				logger.Log.Info().
+				logger.Info().
 					Bytes("payload", msg.Body).
 					Msg("delete product event received")
 
@@ -144,7 +138,7 @@ func main() {
 
 				if !ok {
 
-					logger.Log.Error().
+					logger.Error(nil).
 						Bytes("payload", msg.Body).
 						Msg("missing id in delete product payload")
 
@@ -170,10 +164,9 @@ func main() {
 
 				if err != nil {
 
-					logger.Log.Error().
-						Err(err).
+					logger.Error(err).
 						Uint64("product_id", id).
-						Msg("failed delete product from elasticsearch")
+						Msg("failed to delete product from elasticsearch")
 
 					_ = rabbitmq.RetryMessage(
 						consumer.Channel(),
@@ -186,7 +179,7 @@ func main() {
 					continue
 				}
 
-				logger.Log.Info().
+				logger.Info().
 					Uint64("product_id", id).
 					Msg("product deleted from elasticsearch")
 
@@ -195,7 +188,7 @@ func main() {
 				continue
 			}
 
-			logger.Log.Info().
+			logger.Info().
 				Uint64("product_id", product.ID).
 				Msg("indexing product to elasticsearch")
 
@@ -206,10 +199,9 @@ func main() {
 
 			if err != nil {
 
-				logger.Log.Error().
-					Err(err).
+				logger.Error(err).
 					Uint64("product_id", product.ID).
-					Msg("failed index product")
+					Msg("failed to index product")
 
 				_ = rabbitmq.RetryMessage(
 					consumer.Channel(),
@@ -222,7 +214,7 @@ func main() {
 				continue
 			}
 
-			logger.Log.Info().
+			logger.Info().
 				Uint64("product_id", product.ID).
 				Msg("product indexed successfully")
 
@@ -236,13 +228,13 @@ func main() {
 
 		for msg := range newsMsgs {
 
-			logger.Log.Info().
+			logger.Info().
 				Str("queue", "news").
 				Int(
 					"retry_count",
 					rabbitmq.GetRetryCount(msg),
 				).
-				Msg("news message received")
+				Msg("message received")
 
 			var news entity.News
 
@@ -253,10 +245,9 @@ func main() {
 
 			if err != nil {
 
-				logger.Log.Error().
-					Err(err).
+				logger.Error(err).
 					Bytes("payload", msg.Body).
-					Msg("failed unmarshal news payload")
+					Msg("failed to unmarshal news payload")
 
 				_ = rabbitmq.RetryMessage(
 					consumer.Channel(),
@@ -273,7 +264,7 @@ func main() {
 
 			if news.ID == 0 {
 
-				logger.Log.Info().
+				logger.Info().
 					Bytes("payload", msg.Body).
 					Msg("delete news event received")
 
@@ -288,7 +279,7 @@ func main() {
 
 				if !ok {
 
-					logger.Log.Error().
+					logger.Error(nil).
 						Bytes("payload", msg.Body).
 						Msg("missing id in delete news payload")
 
@@ -314,10 +305,9 @@ func main() {
 
 				if err != nil {
 
-					logger.Log.Error().
-						Err(err).
+					logger.Error(err).
 						Uint64("news_id", id).
-						Msg("failed delete news from elasticsearch")
+						Msg("failed to delete news from elasticsearch")
 
 					_ = rabbitmq.RetryMessage(
 						consumer.Channel(),
@@ -330,7 +320,7 @@ func main() {
 					continue
 				}
 
-				logger.Log.Info().
+				logger.Info().
 					Uint64("news_id", id).
 					Msg("news deleted from elasticsearch")
 
@@ -339,7 +329,7 @@ func main() {
 				continue
 			}
 
-			logger.Log.Info().
+			logger.Info().
 				Uint64("news_id", news.ID).
 				Msg("indexing news to elasticsearch")
 
@@ -350,10 +340,9 @@ func main() {
 
 			if err != nil {
 
-				logger.Log.Error().
-					Err(err).
+				logger.Error(err).
 					Uint64("news_id", news.ID).
-					Msg("failed index news")
+					Msg("failed to index news")
 
 				_ = rabbitmq.RetryMessage(
 					consumer.Channel(),
@@ -366,7 +355,7 @@ func main() {
 				continue
 			}
 
-			logger.Log.Info().
+			logger.Info().
 				Uint64("news_id", news.ID).
 				Msg("news indexed successfully")
 

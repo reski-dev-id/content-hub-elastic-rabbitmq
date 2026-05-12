@@ -16,14 +16,13 @@ func NewClient(url string) (*es8.Client, error) {
 
 	if err != nil {
 
-		logger.Log.Error().
-			Err(err).
-			Msg("failed connect elasticsearch")
+		logger.Error(err).
+			Msg("failed to connect elasticsearch")
 
 		return nil, err
 	}
 
-	logger.Log.Info().
+	logger.Info().
 		Str("url", url).
 		Msg("elasticsearch connected")
 
