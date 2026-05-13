@@ -47,48 +47,21 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, and **Elasticsearch** using **Cl
 | Registry | DockerHub |
 
 ---
-
 ## Clean Architecture Layer
 
-```txt
-┌─────────────────────────────────────────────┐
-│               Delivery Layer                │
-│           internal/delivery/http            │
-│                                             │
-│  - Handler                                  │
-│  - Middleware                               │
-│  - Request DTO                              │
-│  - Response Formatter                       │
-└─────────────────────────────────────────────┘
-                     ↓
-┌─────────────────────────────────────────────┐
-│               Usecase Layer                 │
-│             internal/usecase                │
-│                                             │
-│  - Business Logic                           │
-│  - Validation Flow                          │
-│  - Recommendation Orchestration             │
-└─────────────────────────────────────────────┘
-                     ↓
-┌─────────────────────────────────────────────┐
-│              Repository Layer               │
-│            internal/repository              │
-│                                             │
-│  - MySQL Repository                         │
-│  - Elasticsearch Repository                 │
-│  - RabbitMQ Publisher                       │
-└─────────────────────────────────────────────┘
-                     ↓
-┌─────────────────────────────────────────────┐
-│               Domain Layer                  │
-│              internal/domain                │
-│                                             │
-│  - Entity                                   │
-│  - Repository Interface                     │
-│  - Usecase Interface                        │
-└─────────────────────────────────────────────┘
+```mermaid
+flowchart TD
 
-         ↑ dependencies only point inward ↑
+A["Delivery Layer<br/>internal/delivery/http<br/><br/>- Handler<br/>- Middleware<br/>- Request DTO<br/>- Response Formatter"]
+--> B["Usecase Layer<br/>internal/usecase<br/><br/>- Business Logic<br/>- Validation Flow<br/>- Recommendation Orchestration"]
+
+B --> C["Repository Layer<br/>internal/repository<br/><br/>- MySQL Repository<br/>- Elasticsearch Repository<br/>- RabbitMQ Publisher"]
+
+C --> D["Domain Layer<br/>internal/domain<br/><br/>- Entity<br/>- Repository Interface<br/>- Usecase Interface"]
+
+D -.-> C
+C -.-> B
+B -.-> A
 ```
 
 ### Main Rules
@@ -98,8 +71,6 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, and **Elasticsearch** using **Cl
 - Dependencies are injected through interfaces, not concrete structs
 - Handlers must not directly access repositories
 - Usecases only depend on repository interfaces
-
----
 
 ## Project Structure
 
@@ -228,88 +199,46 @@ content-hub/
 └── todo.txt
 ```
 ---
-
 ## System Architecture
 
-```txt
-                    ┌──────────────┐
-                    │    Client    │
-                    └──────┬───────┘
-                           │ HTTP
-                           ▼
-                 ┌──────────────────┐
-                 │   Gin API Layer  │
-                 └────────┬─────────┘
-                          │
-                          ▼
-                 ┌──────────────────┐
-                 │     Usecase      │
-                 │  Business Logic  │
-                 └────────┬─────────┘
-                          │
-            ┌─────────────┴─────────────┐
-            ▼                           ▼
-   ┌─────────────────┐         ┌─────────────────┐
-   │      MySQL      │         │ Outbox Events   │
-   └─────────────────┘         └────────┬────────┘
-                                        │
-                                        ▼
-                              ┌─────────────────┐
-                              │ Outbox Poller   │
-                              └────────┬────────┘
-                                       │
-                                       ▼
-                              ┌─────────────────┐
-                              │    RabbitMQ     │
-                              └────────┬────────┘
-                                       │
-                                       ▼
-                              ┌─────────────────┐
-                              │    Consumer     │
-                              └────────┬────────┘
-                                       │
-                                       ▼
-                              ┌─────────────────┐
-                              │ Elasticsearch   │
-                              └─────────────────┘
-```
+```mermaid
+flowchart TD
 
+Client[Client]
+--> |HTTP| API[Gin API Layer]
+
+API --> Usecase[Usecase Layer<br/>Business Logic]
+
+Usecase --> MySQL[(MySQL)]
+
+Usecase --> Outbox[(Outbox Events)]
+
+Outbox --> Poller[Outbox Poller]
+
+Poller --> RabbitMQ[RabbitMQ]
+
+RabbitMQ --> Consumer[Consumer Worker]
+
+Consumer --> Elasticsearch[(Elasticsearch)]
+```
 ---
 
 ## Search Architecture
 
-```txt
-User Search Query
-        │
-        ▼
-┌─────────────────────┐
-│ Elasticsearch Query │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│ Multi Match Search  │
-│ - title^3           │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│ Fuzziness AUTO      │
-│ Typo Tolerance      │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│ Search Result       │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│ Recommendation      │
-│ more_like_this      │
-└─────────────────────┘
-```
+```mermaid
+flowchart TD
 
+A[User Search Query]
+--> B[Elasticsearch Query]
+
+B --> C["Multi Match Search<br/>- title^3"]
+
+C --> D["Fuzziness AUTO<br/>Typo Tolerance"]
+
+D --> E[Search Result]
+
+E --> F["Recommendation<br/>more_like_this"]
+```
 ---
 
 ## Search Features
@@ -546,23 +475,23 @@ GitHub Actions workflow:
 ```
 
 ---
-
 ## System Flow
 
-```txt
-Client Request
-      ↓
-API Server (Gin)
-      ↓
-MySQL + outbox_events
-      ↓
-Outbox Poller
-      ↓
-RabbitMQ
-      ↓
-Consumer
-      ↓
-Elasticsearch
+```mermaid
+flowchart TD
+
+A[Client Request]
+--> B[API Server<br/>Gin]
+
+B --> C[MySQL + outbox_events]
+
+C --> D[Outbox Poller]
+
+D --> E[RabbitMQ]
+
+E --> F[Consumer]
+
+F --> G[Elasticsearch]
 ```
 
 ---
