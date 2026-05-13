@@ -1185,5 +1185,6 @@ Production Structure        : DONE
 ```txt
 reski
 programmer.reski@gmail.com
+LinkedIn: linkedin.com/in/reski-id
 
 ```
