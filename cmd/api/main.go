@@ -90,6 +90,16 @@ func main() {
 		rabbitConn,
 	)
 
+	// Elasticsearch Repository
+
+	productESRepo := esRepo.NewProductRepository(
+		esClient,
+	)
+
+	newsESRepo := esRepo.NewNewsRepository(
+		esClient,
+	)
+
 	// Product
 
 	productRepo := mysqlRepo.NewProductRepository(
@@ -98,6 +108,7 @@ func main() {
 
 	productUC := usecase.NewProductUsecase(
 		productRepo,
+		productESRepo,
 	)
 
 	productHandler := handler.NewProductHandler(
@@ -112,24 +123,11 @@ func main() {
 
 	newsUC := usecase.NewNewsUsecase(
 		newsRepo,
+		newsESRepo,
 	)
 
 	newsHandler := handler.NewNewsHandler(
 		newsUC,
-	)
-
-	// Search
-
-	searchRepo := esRepo.NewSearchRepository(
-		esClient,
-	)
-
-	searchUC := usecase.NewSearchUsecase(
-		searchRepo,
-	)
-
-	searchHandler := handler.NewSearchHandler(
-		searchUC,
 	)
 
 	// Router
@@ -137,7 +135,6 @@ func main() {
 	router := httpDelivery.NewRouter(
 		productHandler,
 		newsHandler,
-		searchHandler,
 		healthHandler,
 	)
 

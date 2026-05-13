@@ -78,6 +78,66 @@ func (h *ProductHandler) Create(c *gin.Context) {
 	)
 }
 
+// SearchProducts godoc
+// @Summary Search products
+// @Description Search products with recommendations
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param q query string true "Search query"
+// @Param page query int false "Page"
+// @Param limit query int false "Limit"
+// @Param category_id query int false "Category ID"
+// @Success 200 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /v1/products/search [get]
+func (h *ProductHandler) Search(c *gin.Context) {
+
+	pagination := helper.ParsePagination(c)
+
+	q := c.Query("q")
+
+	var categoryID *uint64
+
+	if cid := c.Query("category_id"); cid != "" {
+
+		val := helper.ParseUint(cid)
+
+		categoryID = &val
+	}
+
+	data, total, err := h.uc.Search(
+		q,
+		categoryID,
+		pagination.Page,
+		pagination.Limit,
+	)
+
+	if err != nil {
+
+		response.Error(
+			c,
+			http.StatusInternalServerError,
+			"failed to search products",
+			err.Error(),
+		)
+
+		return
+	}
+
+	response.SuccessWithMeta(
+		c,
+		http.StatusOK,
+		"products search fetched successfully",
+		data,
+		helper.NewPagination(
+			pagination.Page,
+			pagination.Limit,
+			total,
+		),
+	)
+}
+
 // GetProductByID godoc
 // @Summary Get product detail
 // @Description Get product by ID
@@ -92,7 +152,7 @@ func (h *ProductHandler) GetByID(c *gin.Context) {
 
 	id := c.Param("id")
 
-	data, err := h.uc.GetByID(parseUint(id))
+	data, err := h.uc.GetByID(helper.ParseUint(id))
 
 	if err != nil {
 
@@ -145,7 +205,7 @@ func (h *ProductHandler) Update(c *gin.Context) {
 	}
 
 	product := entity.Product{
-		ID:          parseUint(id),
+		ID:          helper.ParseUint(id),
 		CategoryID:  req.CategoryID,
 		Title:       req.Title,
 		Slug:        req.Slug,
@@ -193,7 +253,9 @@ func (h *ProductHandler) GetAll(c *gin.Context) {
 	var categoryID *uint64
 
 	if cid := c.Query("category_id"); cid != "" {
-		val := parseUint(cid)
+
+		val := helper.ParseUint(cid)
+
 		categoryID = &val
 	}
 
@@ -240,7 +302,7 @@ func (h *ProductHandler) GetAll(c *gin.Context) {
 // @Router /v1/products/{id} [delete]
 func (h *ProductHandler) Delete(c *gin.Context) {
 
-	id := parseUint(c.Param("id"))
+	id := helper.ParseUint(c.Param("id"))
 
 	if err := h.uc.Delete(id); err != nil {
 
