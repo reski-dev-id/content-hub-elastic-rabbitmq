@@ -15,6 +15,60 @@ up:
 
 
 
+testing
+
+End-to-end API testing
+Elasticsearch indexing validation
+Recommendation quality
+Fuzzy search quality
+RabbitMQ retry/DLQ validation
+Error scenario testing
+Swagger verification
+Docker production check
+
+Priority testing:
+
+1. Create product/news
+2. Verify outbox event created
+3. Verify RabbitMQ message published
+4. Verify consumer receives event
+5. Verify Elasticsearch indexed document
+6. Verify search result
+7. Verify typo search
+8. Verify recommendation result
+9. Verify update/delete sync
+10. Verify retry + DLQ flow
+
+Critical search tests:
+
+iphone
+iphne
+androis
+samsng
+laptpo
+
+Recommendation validation:
+
+Search:
+iphone
+
+Expected:
+- iPhone 15
+- iPhone 16
+- Apple accessories
+- Similar smartphone products
+
+Also check:
+
+pagination meta
+response consistency
+request_id middleware
+logger output
+graceful shutdown
+docker compose restart persistence
+
+Project foundation sekarang sudah cukup solid untuk masuk fase stabilization/testing.
+
 
 
 RabbitMQ
