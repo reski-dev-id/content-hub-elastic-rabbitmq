@@ -660,3 +660,486 @@ Current project capabilities:
 - Recovery middleware
 - Request ID tracing
 
+
+---
+
+## Mermaid - Clean Architecture
+
+```mermaid
+flowchart TD
+
+A[Delivery Layer] --> B[Usecase Layer]
+B --> C[Repository Layer]
+C --> D[Domain Layer]
+
+A1[Handler]
+A2[Middleware]
+A3[Request DTO]
+A4[Response Formatter]
+
+B1[Business Logic]
+B2[Validation]
+B3[Recommendation Logic]
+
+C1[MySQL Repository]
+C2[Elasticsearch Repository]
+C3[RabbitMQ Publisher]
+
+D1[Entity]
+D2[Repository Interface]
+D3[Usecase Interface]
+```
+
+---
+
+## Mermaid - System Architecture
+
+```mermaid
+flowchart TD
+
+Client[Client] --> API[Gin API Server]
+
+API --> Usecase[Usecase Layer]
+
+Usecase --> MySQL[(MySQL)]
+Usecase --> Outbox[(Outbox Events)]
+
+Outbox --> Poller[Outbox Poller]
+
+Poller --> RabbitMQ[RabbitMQ]
+
+RabbitMQ --> Consumer[Consumer Worker]
+
+Consumer --> Elasticsearch[(Elasticsearch)]
+```
+
+---
+
+## Mermaid - Search Flow
+
+```mermaid
+flowchart TD
+
+A[User Search Query] --> B[Elasticsearch]
+
+B --> C[Multi Match Query]
+
+C --> D[Fuzziness AUTO]
+
+D --> E[Search Results]
+
+E --> F[Take First Result]
+
+F --> G[more_like_this Query]
+
+G --> H[Recommendations]
+```
+
+---
+
+## Mermaid - Outbox Pattern
+
+```mermaid
+sequenceDiagram
+
+participant Client
+participant API
+participant MySQL
+participant Outbox
+participant Poller
+participant RabbitMQ
+participant Consumer
+participant Elasticsearch
+
+Client->>API: Create Product
+API->>MySQL: Insert Product
+API->>Outbox: Insert Outbox Event
+
+Poller->>Outbox: Read Pending Event
+Poller->>RabbitMQ: Publish Event
+
+RabbitMQ->>Consumer: Consume Event
+
+Consumer->>Elasticsearch: Index Document
+```
+
+---
+
+## Mermaid - Request Lifecycle
+
+```mermaid
+flowchart TD
+
+A[HTTP Request]
+--> B[Request ID Middleware]
+--> C[Logger Middleware]
+--> D[Recovery Middleware]
+--> E[Handler]
+--> F[Usecase]
+--> G[Repository]
+--> H[(Database)]
+```
+
+---
+
+## Mermaid - RabbitMQ Topology
+
+```mermaid
+flowchart TD
+
+Exchange[Exchange]
+
+Exchange --> ProductQueue[product queue]
+Exchange --> NewsQueue[news queue]
+
+ProductQueue --> ProductRetry[product.retry]
+ProductRetry --> ProductDLQ[product.dlq]
+
+NewsQueue --> NewsRetry[news.retry]
+NewsRetry --> NewsDLQ[news.dlq]
+```
+
+---
+
+## Mermaid - Recommendation System
+
+```mermaid
+flowchart TD
+
+A[Search Query]
+--> B[Search Result]
+--> C[First Document]
+--> D[more_like_this]
+--> E[Recommended Documents]
+```
+
+---
+
+## Mermaid - Middleware Stack
+
+```mermaid
+flowchart TD
+
+A[Incoming Request]
+--> B[Request ID]
+--> C[Logger Middleware]
+--> D[Recovery Middleware]
+--> E[Handler]
+--> F[JSON Response]
+```
+
+---
+
+## Mermaid - Product Search Architecture
+
+```mermaid
+flowchart TD
+
+A[Search API]
+--> B[Usecase Search]
+
+B --> C[Elasticsearch Repository]
+
+C --> D[multi_match Query]
+
+D --> E[Fuzzy Search]
+
+E --> F[Search Results]
+
+F --> G[Recommendation Query]
+
+G --> H[Recommended Products]
+```
+
+---
+
+## Mermaid - Elasticsearch Recommendation
+
+```mermaid
+flowchart TD
+
+A[Product Document]
+--> B[more_like_this]
+
+B --> C[title]
+B --> D[description]
+
+C --> E[Similarity Scoring]
+D --> E
+
+E --> F[Recommended Products]
+```
+
+---
+
+## Mermaid - Docker Services
+
+```mermaid
+flowchart TD
+
+Docker[Docker Compose]
+
+Docker --> API[API Server]
+Docker --> Poller[Outbox Poller]
+Docker --> Consumer[RabbitMQ Consumer]
+Docker --> MySQL[(MySQL)]
+Docker --> RabbitMQ[(RabbitMQ)]
+Docker --> Elasticsearch[(Elasticsearch)]
+```
+
+---
+
+## Mermaid - CI/CD Pipeline
+
+```mermaid
+flowchart LR
+
+Feature[feature branch]
+--> Development[development]
+--> Main[main]
+
+Main --> GithubActions[GitHub Actions]
+
+GithubActions --> Build[Docker Build]
+
+Build --> DockerHub[DockerHub Push]
+```
+
+---
+
+## Mermaid - Logging Pipeline
+
+```mermaid
+flowchart TD
+
+A[Application Logs]
+--> B[Zerolog]
+
+B --> C[Console Output]
+
+B --> D[Filebeat]
+
+D --> E[Elasticsearch]
+
+E --> F[Kibana Dashboard]
+```
+
+---
+
+## Mermaid - Pagination Flow
+
+```mermaid
+flowchart TD
+
+A[Client Request]
+--> B[Parse Pagination]
+
+B --> C[page]
+B --> D[limit]
+
+C --> E[Repository Query]
+D --> E
+
+E --> F[Pagination Meta]
+```
+
+---
+
+## Mermaid - API Response Structure
+
+```mermaid
+flowchart TD
+
+A[API Response]
+
+A --> B[success]
+A --> C[message]
+A --> D[data]
+A --> E[meta]
+
+E --> F[page]
+E --> G[limit]
+E --> H[total]
+E --> I[total_pages]
+```
+
+---
+
+## Mermaid - Typo Tolerant Search
+
+```mermaid
+flowchart TD
+
+A[iphne]
+--> B[Fuzziness AUTO]
+--> C[iphone]
+
+D[androis]
+--> E[Fuzziness AUTO]
+--> F[android]
+
+G[samsng]
+--> H[Fuzziness AUTO]
+--> I[samsung]
+```
+
+---
+
+## Mermaid - Dependency Rule
+
+```mermaid
+flowchart BT
+
+Domain[Domain Layer]
+
+Repository[Repository Layer]
+Usecase[Usecase Layer]
+Delivery[Delivery Layer]
+
+Repository --> Domain
+Usecase --> Domain
+Delivery --> Usecase
+```
+
+---
+
+## Mermaid - Project Folder Responsibility
+
+```mermaid
+mindmap
+  root((content-hub))
+    delivery
+      handler
+      middleware
+      request
+      response
+
+    usecase
+      business logic
+      orchestration
+
+    repository
+      mysql
+      elasticsearch
+
+    infrastructure
+      mysql
+      rabbitmq
+      elasticsearch
+
+    helper
+      validation
+      pagination
+
+    logger
+      zerolog
+
+    outbox
+      poller
+
+    docs
+      swagger
+
+    postman
+      api testing
+```
+
+---
+
+## Mermaid - Full Data Flow
+
+```mermaid
+flowchart LR
+
+Client --> API
+
+API --> Usecase
+
+Usecase --> MySQL
+Usecase --> Outbox
+
+Outbox --> Poller
+
+Poller --> RabbitMQ
+
+RabbitMQ --> Consumer
+
+Consumer --> Elasticsearch
+
+Elasticsearch --> SearchAPI[Search Endpoint]
+
+SearchAPI --> Client
+```
+
+---
+
+## Mermaid - Search Query Example
+
+```mermaid
+flowchart TD
+
+A[User Query]
+--> B[multi_match]
+
+B --> C[title^3]
+B --> D[description]
+
+C --> E[Fuzziness AUTO]
+D --> E
+
+E --> F[Ranked Search Results]
+```
+
+---
+
+## Mermaid - Graceful Shutdown
+
+```mermaid
+flowchart TD
+
+A[SIGINT / SIGTERM]
+--> B[Stop HTTP Server]
+--> C[Close RabbitMQ]
+--> D[Close Database]
+--> E[Shutdown Complete]
+```
+
+---
+
+## Mermaid - Validation Flow
+
+```mermaid
+flowchart TD
+
+A[Incoming JSON]
+--> B[DTO Validation]
+
+B --> C{Valid?}
+
+C -->|No| D[Validation Error Response]
+
+C -->|Yes| E[Continue to Usecase]
+```
+
+---
+
+## Mermaid - Structured Logging Example
+
+```mermaid
+flowchart TD
+
+A[HTTP Request]
+--> B[Request ID]
+
+B --> C[Zerolog Fields]
+
+C --> D[service]
+C --> E[event]
+C --> F[duration_ms]
+C --> G[status_code]
+
+D --> H[JSON Log Output]
+E --> H
+F --> H
+G --> H
+```
