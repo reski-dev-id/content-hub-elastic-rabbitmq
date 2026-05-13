@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"time"
 
+	"content-hub/internal/delivery/http/response"
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/domain/repository"
 	domain "content-hub/internal/domain/usecase"
+	"content-hub/internal/logger"
 
 	esRepo "content-hub/internal/repository/elasticsearch"
-
-	"content-hub/internal/logger"
 )
 
 type productUsecase struct {
@@ -358,7 +358,7 @@ func (u *productUsecase) Search(
 	categoryID *uint64,
 	page int,
 	limit int,
-) (*domain.ProductSearchResponse, int64, error) {
+) (interface{}, int64, error) {
 
 	start := time.Now()
 
@@ -387,7 +387,7 @@ func (u *productUsecase) Search(
 		return nil, 0, err
 	}
 
-	response := &domain.ProductSearchResponse{
+	result := &response.ProductSearchResponse{
 		Items:           items,
 		Recommendations: []entity.Product{},
 	}
@@ -400,7 +400,7 @@ func (u *productUsecase) Search(
 		)
 
 		if err == nil {
-			response.Recommendations = recommendations
+			result.Recommendations = recommendations
 		}
 	}
 
@@ -419,5 +419,5 @@ func (u *productUsecase) Search(
 		).
 		Msg("product search completed")
 
-	return response, total, nil
+	return result, total, nil
 }
