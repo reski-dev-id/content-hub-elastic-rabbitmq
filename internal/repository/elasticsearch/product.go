@@ -288,10 +288,11 @@ func (r *ProductRepository) Search(
 			"multi_match": map[string]interface{}{
 				"query": q,
 				"fields": []string{
-					"title^3",
-					"description",
+					"title^5",
 				},
-				"fuzziness": "AUTO",
+				"fuzziness":     "AUTO",
+				"prefix_length": 1,
+				"operator":      "and",
 			},
 		},
 	}

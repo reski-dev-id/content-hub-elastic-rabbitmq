@@ -11,12 +11,17 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunaka
 - DTO Request Validation
 - Swagger OpenAPI Documentation
 - Full-text Search with Elasticsearch
+- Fuzzy Search (Typo Tolerance)
+- Recommendation Search System
 - Outbox Pattern
 - RabbitMQ Async Event Processing
 - Graceful Shutdown
 - Health Check Endpoint
 - Pagination Meta Response
 - Validation Error Formatter
+- Structured Logging
+- Request ID Middleware
+- Recovery Middleware
 - Dockerized Application
 - GitHub Actions CI/CD
 - DockerHub Auto Deploy
@@ -35,6 +40,7 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunaka
 | API Documentation | Swagger / OpenAPI |
 | Validation | go-playground/validator |
 | Configuration | Viper |
+| Logging | Zerolog |
 | Dependency Injection | Manual Constructor Injection |
 | Containerization | Docker + Docker Compose |
 | CI/CD | GitHub Actions |
@@ -44,20 +50,44 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunaka
 
 ## Clean Architecture Layer
 
-```
+```txt
 ┌─────────────────────────────────────────────┐
-│               Delivery Layer                │  ← HTTP Handler (Gin)
+│               Delivery Layer                │
 │           internal/delivery/http            │
-├─────────────────────────────────────────────┤
-│               Usecase Layer                 │  ← Business Logic
-│             internal/usecase                │
-├─────────────────────────────────────────────┤
-│              Repository Layer               │  ← Data Access (interface)
-│            internal/repository              │
-├─────────────────────────────────────────────┤
-│               Domain Layer                  │  ← Entity, Interface, DTO
-│              internal/domain                │
+│                                             │
+│  - Handler                                 │
+│  - Middleware                              │
+│  - Request DTO                             │
+│  - Response Formatter                      │
 └─────────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────┐
+│               Usecase Layer                 │
+│             internal/usecase                │
+│                                             │
+│  - Business Logic                           │
+│  - Validation Flow                          │
+│  - Recommendation Orchestration             │
+└─────────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────┐
+│              Repository Layer               │
+│            internal/repository              │
+│                                             │
+│  - MySQL Repository                         │
+│  - Elasticsearch Repository                 │
+│  - RabbitMQ Publisher                       │
+└─────────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────┐
+│               Domain Layer                  │
+│              internal/domain                │
+│                                             │
+│  - Entity                                   │
+│  - Repository Interface                     │
+│  - Usecase Interface                        │
+└─────────────────────────────────────────────┘
+
          ↑ dependency hanya ke dalam ↑
 ```
 
@@ -73,23 +103,24 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunaka
 
 ## Struktur Project
 
-```
+```txt
 content-hub/
 │
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml              # github actions docker deploy
+│       └── deploy.yml
 │
 ├── cmd/
 │   ├── api/
-│   │   └── main.go                 # entry point API server
+│   │   └── main.go
+│   │
 │   └── consumer/
-│       └── main.go                 # RabbitMQ consumer + Elasticsearch indexer
+│       └── main.go
 │
 ├── config/
-│   └── config.go                   # viper config loader
+│   └── config.go
 │
-├── docs/                           # swagger generated docs
+├── docs/
 │   ├── docs.go
 │   ├── swagger.json
 │   └── swagger.yaml
@@ -98,29 +129,32 @@ content-hub/
 │   │
 │   ├── domain/
 │   │   ├── entity/
+│   │   │   ├── category.go
 │   │   │   ├── product.go
 │   │   │   ├── news.go
-│   │   │   ├── category.go
 │   │   │   └── outbox.go
 │   │   │
 │   │   ├── repository/
+│   │   │   ├── category.go
 │   │   │   ├── product.go
 │   │   │   ├── news.go
-│   │   │   ├── category.go
 │   │   │   └── outbox.go
 │   │   │
 │   │   └── usecase/
 │   │       ├── product.go
-│   │       ├── news.go
-│   │       └── search.go
+│   │       └── news.go
 │   │
 │   ├── delivery/
 │   │   └── http/
 │   │       ├── handler/
 │   │       │   ├── health.go
 │   │       │   ├── product.go
-│   │       │   ├── news.go
-│   │       │   └── search.go
+│   │       │   └── news.go
+│   │       │
+│   │       ├── middleware/
+│   │       │   ├── logger.go
+│   │       │   ├── recovery.go
+│   │       │   └── request_id.go
 │   │       │
 │   │       ├── request/
 │   │       │   ├── product.go
@@ -133,7 +167,7 @@ content-hub/
 │   │
 │   ├── helper/
 │   │   ├── pagination.go
-│   │   ├── parse_pagination.go
+│   │   ├── parser.go
 │   │   └── validation.go
 │   │
 │   ├── infrastructure/
@@ -150,18 +184,21 @@ content-hub/
 │   │
 │   ├── repository/
 │   │   ├── mysql/
+│   │   │   ├── category.go
 │   │   │   ├── product.go
 │   │   │   ├── news.go
-│   │   │   ├── category.go
 │   │   │   └── outbox.go
 │   │   │
 │   │   └── elasticsearch/
-│   │       └── search.go
+│   │       ├── product.go
+│   │       └── news.go
 │   │
 │   ├── usecase/
 │   │   ├── product.go
-│   │   ├── news.go
-│   │   └── search.go
+│   │   └── news.go
+│   │
+│   ├── logger/
+│   │   └── logger.go
 │   │
 │   └── outbox/
 │       └── poller.go
@@ -178,6 +215,127 @@ content-hub/
 ├── go.mod
 └── README.md
 ```
+
+---
+
+## System Architecture
+
+```txt
+                    ┌──────────────┐
+                    │    Client    │
+                    └──────┬───────┘
+                           │ HTTP
+                           ▼
+                 ┌──────────────────┐
+                 │   Gin API Layer  │
+                 └────────┬─────────┘
+                          │
+                          ▼
+                 ┌──────────────────┐
+                 │     Usecase      │
+                 │  Business Logic  │
+                 └────────┬─────────┘
+                          │
+            ┌─────────────┴─────────────┐
+            ▼                           ▼
+   ┌─────────────────┐         ┌─────────────────┐
+   │      MySQL      │         │ Outbox Events   │
+   └─────────────────┘         └────────┬────────┘
+                                        │
+                                        ▼
+                              ┌─────────────────┐
+                              │ Outbox Poller   │
+                              └────────┬────────┘
+                                       │
+                                       ▼
+                              ┌─────────────────┐
+                              │    RabbitMQ     │
+                              └────────┬────────┘
+                                       │
+                                       ▼
+                              ┌─────────────────┐
+                              │    Consumer     │
+                              └────────┬────────┘
+                                       │
+                                       ▼
+                              ┌─────────────────┐
+                              │ Elasticsearch   │
+                              └─────────────────┘
+```
+
+---
+
+## Search Architecture
+
+```txt
+User Search Query
+        │
+        ▼
+┌─────────────────────┐
+│ Elasticsearch Query │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│ Multi Match Search  │
+│ - title^3           │
+│ - description       │
+│ - content           │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│ Fuzziness AUTO      │
+│ Typo Tolerance      │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│ Search Result       │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│ Recommendation      │
+│ more_like_this      │
+└─────────────────────┘
+```
+
+---
+
+## Search Features
+
+### Full-text Search
+
+Menggunakan Elasticsearch `multi_match` query.
+
+### Fuzzy Search
+
+Mendukung typo tolerance:
+
+```txt
+iphne   → iphone
+androis → android
+samsng  → samsung
+```
+
+Menggunakan:
+
+```json
+{
+  "fuzziness": "AUTO"
+}
+```
+
+### Recommendation Search
+
+Menggunakan Elasticsearch:
+
+```txt
+more_like_this
+```
+
+Recommendation otomatis muncul berdasarkan hasil pertama pencarian.
 
 ---
 
@@ -284,15 +442,16 @@ CREATE TABLE outbox_events (
 |--------|------|--------------|-----------|
 | POST | /v1/products | — | Create product |
 | GET | /v1/products | page, limit, category_id | List product |
+| GET | /v1/products/search | q, page, limit, category_id | Search product |
 | GET | /v1/products/:id | — | Product detail |
 | PUT | /v1/products/:id | — | Update product |
 | DELETE | /v1/products/:id | — | Delete product |
 | POST | /v1/news | — | Create news |
 | GET | /v1/news | page, limit, category_id | List news |
+| GET | /v1/news/search | q, page, limit, category_id | Search news |
 | GET | /v1/news/:id | — | News detail |
 | PUT | /v1/news/:id | — | Update news |
 | DELETE | /v1/news/:id | — | Delete news |
-| GET | /v1/search | q, type, category_id, page, limit | Search via Elasticsearch |
 | GET | /health | — | Health check |
 
 ---
@@ -308,7 +467,7 @@ swag init -g cmd/api/main.go
 Open browser:
 
 ```txt
-http://localhost:8080/swagger/index.html
+http://localhost:8080/v1/swagger/index.html
 ```
 
 ---
@@ -358,6 +517,27 @@ Example response:
   "success": true,
   "message": "products fetched successfully",
   "data": [],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 100,
+    "total_pages": 10
+  }
+}
+```
+
+---
+
+## Search Response Format
+
+```json
+{
+  "success": true,
+  "message": "products search fetched successfully",
+  "data": {
+    "items": [],
+    "recommendations": []
+  },
   "meta": {
     "page": 1,
     "limit": 10,
@@ -457,7 +637,7 @@ GitHub Actions workflow:
 
 ## Flow Sistem
 
-```
+```txt
 Client Request
       ↓
 API Server (Gin)
@@ -522,7 +702,15 @@ curl -X POST http://localhost:8080/v1/news \
 ### Search Product
 
 ```bash
-curl "http://localhost:8080/v1/search?q=iphone&type=product&page=1&limit=10"
+curl "http://localhost:8080/v1/products/search?q=iphone&page=1&limit=10"
+```
+
+---
+
+### Typo Search
+
+```bash
+curl "http://localhost:8080/v1/products/search?q=iphne"
 ```
 
 ---
@@ -554,15 +742,8 @@ Project saat ini sudah memiliki:
 - Automated CI/CD pipeline
 - Health monitoring endpoint
 - Swagger documentation
-
-Planned next improvements:
-
-- Request logger middleware
-- Recover middleware
-- Request ID middleware
-- Integration testing
-- VPS deployment
-- Nginx reverse proxy
-- SSL/domain setup
-- Recommendation system
-
+- Fuzzy typo-tolerant search
+- Elasticsearch recommendation system
+- Structured logging middleware
+- Recovery middleware
+- Request ID tracing
