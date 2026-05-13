@@ -1,7 +1,7 @@
 # Content Hub
 
-Katalog Produk & Berita dengan full-text search.
-Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunakan **Clean Architecture**.
+Product & News catalog with full-text search.
+Built with **Golang**, **MySQL**, **RabbitMQ**, and **Elasticsearch** using **Clean Architecture**.
 
 ---
 
@@ -11,12 +11,17 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunaka
 - DTO Request Validation
 - Swagger OpenAPI Documentation
 - Full-text Search with Elasticsearch
+- Fuzzy Search (Typo Tolerance)
+- Recommendation Search System
 - Outbox Pattern
 - RabbitMQ Async Event Processing
 - Graceful Shutdown
 - Health Check Endpoint
 - Pagination Meta Response
 - Validation Error Formatter
+- Structured Logging
+- Request ID Middleware
+- Recovery Middleware
 - Dockerized Application
 - GitHub Actions CI/CD
 - DockerHub Auto Deploy
@@ -35,246 +40,240 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunaka
 | API Documentation | Swagger / OpenAPI |
 | Validation | go-playground/validator |
 | Configuration | Viper |
+| Logging | Zerolog |
 | Dependency Injection | Manual Constructor Injection |
 | Containerization | Docker + Docker Compose |
 | CI/CD | GitHub Actions |
 | Registry | DockerHub |
 
 ---
-
 ## Clean Architecture Layer
 
-```
-┌─────────────────────────────────────────────┐
-│               Delivery Layer                │  ← HTTP Handler (Gin)
-│           internal/delivery/http            │
-├─────────────────────────────────────────────┤
-│               Usecase Layer                 │  ← Business Logic
-│             internal/usecase                │
-├─────────────────────────────────────────────┤
-│              Repository Layer               │  ← Data Access (interface)
-│            internal/repository              │
-├─────────────────────────────────────────────┤
-│               Domain Layer                  │  ← Entity, Interface, DTO
-│              internal/domain                │
-└─────────────────────────────────────────────┘
-         ↑ dependency hanya ke dalam ↑
+```mermaid
+flowchart TD
+
+A["Delivery Layer<br/>internal/delivery/http<br/><br/>- Handler<br/>- Middleware<br/>- Request DTO<br/>- Response Formatter"]
+--> B["Usecase Layer<br/>internal/usecase<br/><br/>- Business Logic<br/>- Validation Flow<br/>- Recommendation Orchestration"]
+
+B --> C["Repository Layer<br/>internal/repository<br/><br/>- MySQL Repository<br/>- Elasticsearch Repository<br/>- RabbitMQ Publisher"]
+
+C --> D["Domain Layer<br/>internal/domain<br/><br/>- Entity<br/>- Repository Interface<br/>- Usecase Interface"]
+
+D -.-> C
+C -.-> B
+B -.-> A
 ```
 
-### Aturan utama
+### Main Rules
 
-- Tiap layer hanya boleh depend ke layer di bawahnya
-- Domain layer tidak boleh import package luar (pure Go)
-- Dependency ditanamkan via interface, bukan concrete struct
-- Handler tidak langsung akses repository
-- Usecase hanya bergantung pada interface repository
+- Each layer may only depend on the layer below it
+- Domain layer must not import external packages (pure Go)
+- Dependencies are injected through interfaces, not concrete structs
+- Handlers must not directly access repositories
+- Usecases only depend on repository interfaces
 
----
+## Project Structure
 
-## Struktur Project
-
-```
+```txt
 content-hub/
 │
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml              # github actions docker deploy
+│       └── deploy.yml
 │
 ├── cmd/
 │   ├── api/
-│   │   └── main.go                 # entry point API server
-│   └── consumer/
-│       └── main.go                 # RabbitMQ consumer + Elasticsearch indexer
+│   │   └── main.go
+│   │
+│   ├── consumer/
+│   │   └── main.go
+│   │
+│   └── poller/
+│       └── main.go
 │
 ├── config/
-│   └── config.go                   # viper config loader
+│   └── config.go
 │
-├── docs/                           # swagger generated docs
+├── docker/
+│   └── mysql/
+│       └── init/
+│           └── init.sql
+│
+├── docs/
 │   ├── docs.go
 │   ├── swagger.json
 │   └── swagger.yaml
 │
 ├── internal/
 │   │
-│   ├── domain/
-│   │   ├── entity/
-│   │   │   ├── product.go
-│   │   │   ├── news.go
-│   │   │   ├── category.go
-│   │   │   └── outbox.go
-│   │   │
-│   │   ├── repository/
-│   │   │   ├── product.go
-│   │   │   ├── news.go
-│   │   │   ├── category.go
-│   │   │   └── outbox.go
-│   │   │
-│   │   └── usecase/
-│   │       ├── product.go
-│   │       ├── news.go
-│   │       └── search.go
-│   │
 │   ├── delivery/
 │   │   └── http/
+│   │       ├── router.go
+│   │       │
 │   │       ├── handler/
 │   │       │   ├── health.go
-│   │       │   ├── product.go
 │   │       │   ├── news.go
-│   │       │   └── search.go
+│   │       │   └── product.go
+│   │       │
+│   │       ├── middleware/
+│   │       │   ├── logger.go
+│   │       │   ├── recovery.go
+│   │       │   └── request_id.go
 │   │       │
 │   │       ├── request/
-│   │       │   ├── product.go
-│   │       │   └── news.go
+│   │       │   ├── news.go
+│   │       │   └── product.go
 │   │       │
-│   │       ├── response/
-│   │       │   └── response.go
-│   │       │
-│   │       └── router.go
+│   │       └── response/
+│   │           ├── json.go
+│   │           ├── response.go
+│   │           └── search.go
+│   │
+│   ├── domain/
+│   │   ├── entity/
+│   │   │   ├── news.go
+│   │   │   ├── outbox.go
+│   │   │   └── product.go
+│   │   │
+│   │   ├── repository/
+│   │   │   ├── news.go
+│   │   │   ├── outbox.go
+│   │   │   └── product.go
+│   │   │
+│   │   └── usecase/
+│   │       ├── news.go
+│   │       └── product.go
 │   │
 │   ├── helper/
 │   │   ├── pagination.go
-│   │   ├── parse_pagination.go
+│   │   ├── string.go
 │   │   └── validation.go
 │   │
 │   ├── infrastructure/
-│   │   ├── mysql/
-│   │   │   └── db.go
-│   │   │
 │   │   ├── elasticsearch/
 │   │   │   └── client.go
 │   │   │
+│   │   ├── mysql/
+│   │   │   └── db.go
+│   │   │
 │   │   └── rabbitmq/
 │   │       ├── connection.go
+│   │       ├── consumer.go
 │   │       ├── publisher.go
-│   │       └── consumer.go
+│   │       ├── retry.go
+│   │       └── topology.go
+│   │
+│   ├── logger/
+│   │   └── logger.go
+│   │
+│   ├── outbox/
+│   │   └── poller.go
 │   │
 │   ├── repository/
-│   │   ├── mysql/
-│   │   │   ├── product.go
+│   │   ├── elasticsearch/
 │   │   │   ├── news.go
-│   │   │   ├── category.go
-│   │   │   └── outbox.go
+│   │   │   └── product.go
 │   │   │
-│   │   └── elasticsearch/
-│   │       └── search.go
+│   │   └── mysql/
+│   │       ├── news.go
+│   │       ├── outbox.go
+│   │       └── product.go
 │   │
-│   ├── usecase/
-│   │   ├── product.go
-│   │   ├── news.go
-│   │   └── search.go
-│   │
-│   └── outbox/
-│       └── poller.go
+│   └── usecase/
+│       ├── news.go
+│       └── product.go
 │
-├── migrations/
-│   ├── 001_create_categories.sql
-│   ├── 002_create_products.sql
-│   ├── 003_create_news.sql
-│   └── 004_create_outbox_events.sql
+├── postman/
+│   └── content-hub.postman_collection.json
 │
-├── Dockerfile
+├── screenshoot/
+│
+├── .env
 ├── docker-compose.yml
-├── .env.example
+├── Dockerfile
+├── filebeat.yml
 ├── go.mod
-└── README.md
+├── go.sum
+├── readme.md
+├── structure.txt
+└── todo.txt
 ```
+---
+## System Architecture
 
+```mermaid
+flowchart TD
+
+Client[Client]
+--> |HTTP| API[Gin API Layer]
+
+API --> Usecase[Usecase Layer<br/>Business Logic]
+
+Usecase --> MySQL[(MySQL)]
+
+Usecase --> Outbox[(Outbox Events)]
+
+Outbox --> Poller[Outbox Poller]
+
+Poller --> RabbitMQ[RabbitMQ]
+
+RabbitMQ --> Consumer[Consumer Worker]
+
+Consumer --> Elasticsearch[(Elasticsearch)]
+```
 ---
 
-## Database Schema (DDL)
+## Search Architecture
 
-```sql
-CREATE TABLE categories (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  slug VARCHAR(100) NOT NULL UNIQUE,
-  type ENUM('product', 'news') NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+```mermaid
+flowchart TD
 
-CREATE TABLE products (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  category_id BIGINT UNSIGNED NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  slug VARCHAR(255) NOT NULL UNIQUE,
-  description TEXT,
-  price DECIMAL(15,2) NOT NULL DEFAULT 0,
-  status ENUM('active', 'inactive') DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (category_id) REFERENCES categories(id),
-  INDEX idx_title (title),
-  INDEX idx_category (category_id)
-);
+A[User Search Query]
+--> B[Elasticsearch Query]
 
-CREATE TABLE news (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  category_id BIGINT UNSIGNED NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  slug VARCHAR(255) NOT NULL UNIQUE,
-  content LONGTEXT,
-  author VARCHAR(100) NOT NULL,
-  status ENUM('draft', 'published') DEFAULT 'draft',
-  published_at TIMESTAMP NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (category_id) REFERENCES categories(id),
-  INDEX idx_title (title),
-  INDEX idx_status_published (status, published_at)
-);
+B --> C["Multi Match Search<br/>- title^3"]
 
-CREATE TABLE outbox_events (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  aggregate_type ENUM('product', 'news') NOT NULL,
-  aggregate_id BIGINT UNSIGNED NOT NULL,
-  event_type VARCHAR(50) NOT NULL,
-  payload JSON NOT NULL,
-  status ENUM('pending', 'sent') DEFAULT 'pending',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  sent_at TIMESTAMP NULL,
-  INDEX idx_status (status)
-);
+C --> D["Fuzziness AUTO<br/>Typo Tolerance"]
+
+D --> E[Search Result]
+
+E --> F["Recommendation<br/>more_like_this"]
 ```
-
 ---
 
-## Elasticsearch Index Mapping
+## Search Features
 
-### Index: products
+### Full-text Search
+
+Uses Elasticsearch `multi_match` query.
+
+### Fuzzy Search
+
+Supports typo tolerance:
+
+```txt
+iphne   → iphone
+androis → android
+samsng  → samsung
+```
+
+Powered by:
 
 ```json
 {
-  "mappings": {
-    "properties": {
-      "id": { "type": "long" },
-      "title": { "type": "text", "analyzer": "standard" },
-      "description": { "type": "text" },
-      "category_id": { "type": "long" },
-      "price": { "type": "float" },
-      "status": { "type": "keyword" },
-      "updated_at": { "type": "date" }
-    }
-  }
+  "fuzziness": "AUTO"
 }
 ```
 
-### Index: news
+### Recommendation Search
 
-```json
-{
-  "mappings": {
-    "properties": {
-      "id": { "type": "long" },
-      "title": { "type": "text", "analyzer": "standard" },
-      "content": { "type": "text" },
-      "category_id": { "type": "long" },
-      "author": { "type": "keyword" },
-      "status": { "type": "keyword" },
-      "published_at": { "type": "date" }
-    }
-  }
-}
+Uses Elasticsearch:
+
+```txt
+more_like_this
 ```
+
+Recommendations are automatically generated from the first search result.
 
 ---
 
@@ -283,16 +282,17 @@ CREATE TABLE outbox_events (
 | Method | Path | Query Params | Description |
 |--------|------|--------------|-----------|
 | POST | /v1/products | — | Create product |
-| GET | /v1/products | page, limit, category_id | List product |
-| GET | /v1/products/:id | — | Product detail |
+| GET | /v1/products | page, limit, category_id | Get product list |
+| GET | /v1/products/search | q, page, limit, category_id | Search products |
+| GET | /v1/products/:id | — | Get product detail |
 | PUT | /v1/products/:id | — | Update product |
 | DELETE | /v1/products/:id | — | Delete product |
 | POST | /v1/news | — | Create news |
-| GET | /v1/news | page, limit, category_id | List news |
-| GET | /v1/news/:id | — | News detail |
+| GET | /v1/news | page, limit, category_id | Get news list |
+| GET | /v1/news/search | q, page, limit, category_id | Search news |
+| GET | /v1/news/:id | — | Get news detail |
 | PUT | /v1/news/:id | — | Update news |
 | DELETE | /v1/news/:id | — | Delete news |
-| GET | /v1/search | q, type, category_id, page, limit | Search via Elasticsearch |
 | GET | /health | — | Health check |
 
 ---
@@ -308,7 +308,7 @@ swag init -g cmd/api/main.go
 Open browser:
 
 ```txt
-http://localhost:8080/swagger/index.html
+http://localhost:8080/v1/swagger/index.html
 ```
 
 ---
@@ -369,7 +369,28 @@ Example response:
 
 ---
 
-## Setup & Menjalankan
+## Search Response Format
+
+```json
+{
+  "success": true,
+  "message": "products search fetched successfully",
+  "data": {
+    "items": [],
+    "recommendations": []
+  },
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 100,
+    "total_pages": 10
+  }
+}
+```
+
+---
+
+## Setup & Run
 
 ### 1. Clone Repository
 
@@ -396,13 +417,13 @@ docker compose build
 
 ---
 
-### 4. Jalankan Semua Service
+### 4. Start All Services
 
 ```bash
 docker compose up
 ```
 
-Service yang akan berjalan:
+Running services:
 
 - MySQL
 - RabbitMQ
@@ -441,11 +462,11 @@ feature/*
 → DockerHub auto push
 ```
 
-Saat merge ke branch main:
+When merged into `main`:
 
-- GitHub Actions otomatis build docker image
-- Push image ke DockerHub
-- Generate latest image tag
+- GitHub Actions automatically builds Docker image
+- Pushes image to DockerHub
+- Generates latest image tag
 
 GitHub Actions workflow:
 
@@ -454,30 +475,30 @@ GitHub Actions workflow:
 ```
 
 ---
+## System Flow
 
-## Flow Sistem
+```mermaid
+flowchart TD
 
-```
-Client Request
-      ↓
-API Server (Gin)
-      ↓
-MySQL + outbox_events
-      ↓
-Outbox Poller
-      ↓
-RabbitMQ
-      ↓
-Consumer
-      ↓
-Elasticsearch
+A[Client Request]
+--> B[API Server<br/>Gin]
+
+B --> C[MySQL + outbox_events]
+
+C --> D[Outbox Poller]
+
+D --> E[RabbitMQ]
+
+E --> F[Consumer]
+
+F --> G[Elasticsearch]
 ```
 
 ---
 
-## Verifikasi
+## Verification
 
-### List Product
+### List Products
 
 ```bash
 curl http://localhost:8080/v1/products
@@ -509,9 +530,9 @@ curl -X POST http://localhost:8080/v1/news \
 -H "Content-Type: application/json" \
 -d '{
   "category_id": 6,
-  "title": "AI Dunia",
-  "slug": "ai-dunia",
-  "content": "AI berkembang sangat cepat",
+  "title": "AI World",
+  "slug": "ai-world",
+  "content": "AI is rapidly evolving",
   "author": "Reski",
   "status": "published"
 }'
@@ -522,29 +543,37 @@ curl -X POST http://localhost:8080/v1/news \
 ### Search Product
 
 ```bash
-curl "http://localhost:8080/v1/search?q=iphone&type=product&page=1&limit=10"
+curl "http://localhost:8080/v1/products/search?q=iphone&page=1&limit=10"
 ```
 
 ---
 
-## Prinsip Clean Architecture yang Diterapkan
+### Typo Search
 
-| Prinsip | Implementasi |
+```bash
+curl "http://localhost:8080/v1/products/search?q=iphne"
+```
+
+---
+
+## Applied Clean Architecture Principles
+
+| Principle | Implementation |
 |---------|-------------|
-| Dependency Rule | Semua dependency arahnya ke dalam — domain tidak import infrastructure sama sekali |
-| Interface Segregation | Tiap repository dan usecase punya interface tersendiri di domain |
-| Dependency Injection | Dependency diinject manual melalui constructor function |
-| Separation of Concern | Entity, business logic, data access, dan delivery sepenuhnya terpisah |
-| Testability | Semua usecase dan handler mudah di-mock karena hanya bergantung pada interface |
-| Single Responsibility | Tiap struct punya satu tanggung jawab yang jelas |
-| Graceful Shutdown | Server menangani SIGTERM/SIGINT dengan proper cleanup |
-| Async Processing | Outbox pattern + RabbitMQ untuk eventual consistency |
+| Dependency Rule | All dependencies point inward — domain never imports infrastructure |
+| Interface Segregation | Each repository and usecase has its own interface |
+| Dependency Injection | Dependencies injected manually via constructors |
+| Separation of Concern | Entity, business logic, data access, and delivery are fully separated |
+| Testability | Usecases and handlers are easy to mock because they depend on interfaces |
+| Single Responsibility | Each struct has a single clear responsibility |
+| Graceful Shutdown | Server handles SIGTERM/SIGINT with proper cleanup |
+| Async Processing | Outbox pattern + RabbitMQ for eventual consistency |
 
 ---
 
 ## Current Status
 
-Project saat ini sudah memiliki:
+Current project capabilities:
 
 - Production-ready backend foundation
 - Async event-driven architecture
@@ -554,15 +583,607 @@ Project saat ini sudah memiliki:
 - Automated CI/CD pipeline
 - Health monitoring endpoint
 - Swagger documentation
+- Fuzzy typo-tolerant search
+- Elasticsearch recommendation system
+- Structured logging middleware
+- Recovery middleware
+- Request ID tracing
 
-Planned next improvements:
 
-- Request logger middleware
-- Recover middleware
-- Request ID middleware
-- Integration testing
-- VPS deployment
-- Nginx reverse proxy
-- SSL/domain setup
-- Recommendation system
+---
 
+## Mermaid - Clean Architecture
+
+```mermaid
+flowchart TD
+
+A[Delivery Layer] --> B[Usecase Layer]
+B --> C[Repository Layer]
+C --> D[Domain Layer]
+
+A1[Handler]
+A2[Middleware]
+A3[Request DTO]
+A4[Response Formatter]
+
+B1[Business Logic]
+B2[Validation]
+B3[Recommendation Logic]
+
+C1[MySQL Repository]
+C2[Elasticsearch Repository]
+C3[RabbitMQ Publisher]
+
+D1[Entity]
+D2[Repository Interface]
+D3[Usecase Interface]
+```
+
+---
+
+## Mermaid - System Architecture
+
+```mermaid
+flowchart TD
+
+Client[Client] --> API[Gin API Server]
+
+API --> Usecase[Usecase Layer]
+
+Usecase --> MySQL[(MySQL)]
+Usecase --> Outbox[(Outbox Events)]
+
+Outbox --> Poller[Outbox Poller]
+
+Poller --> RabbitMQ[RabbitMQ]
+
+RabbitMQ --> Consumer[Consumer Worker]
+
+Consumer --> Elasticsearch[(Elasticsearch)]
+```
+
+---
+
+## Mermaid - Search Flow
+
+```mermaid
+flowchart TD
+
+A[User Search Query] --> B[Elasticsearch]
+
+B --> C[Multi Match Query]
+
+C --> D[Fuzziness AUTO]
+
+D --> E[Search Results]
+
+E --> F[Take First Result]
+
+F --> G[more_like_this Query]
+
+G --> H[Recommendations]
+```
+
+---
+
+## Mermaid - Outbox Pattern
+
+```mermaid
+sequenceDiagram
+
+participant Client
+participant API
+participant MySQL
+participant Outbox
+participant Poller
+participant RabbitMQ
+participant Consumer
+participant Elasticsearch
+
+Client->>API: Create Product
+API->>MySQL: Insert Product
+API->>Outbox: Insert Outbox Event
+
+Poller->>Outbox: Read Pending Event
+Poller->>RabbitMQ: Publish Event
+
+RabbitMQ->>Consumer: Consume Event
+
+Consumer->>Elasticsearch: Index Document
+```
+
+---
+
+## Mermaid - Request Lifecycle
+
+```mermaid
+flowchart TD
+
+A[HTTP Request]
+--> B[Request ID Middleware]
+--> C[Logger Middleware]
+--> D[Recovery Middleware]
+--> E[Handler]
+--> F[Usecase]
+--> G[Repository]
+--> H[(Database)]
+```
+
+---
+
+## Mermaid - RabbitMQ Topology
+
+```mermaid
+flowchart TD
+
+Exchange[Exchange]
+
+Exchange --> ProductQueue[product queue]
+Exchange --> NewsQueue[news queue]
+
+ProductQueue --> ProductRetry[product.retry]
+ProductRetry --> ProductDLQ[product.dlq]
+
+NewsQueue --> NewsRetry[news.retry]
+NewsRetry --> NewsDLQ[news.dlq]
+```
+
+---
+
+## Mermaid - Recommendation System
+
+```mermaid
+flowchart TD
+
+A[Search Query]
+--> B[Search Result]
+--> C[First Document]
+--> D[more_like_this]
+--> E[Recommended Documents]
+```
+
+---
+
+## Mermaid - Middleware Stack
+
+```mermaid
+flowchart TD
+
+A[Incoming Request]
+--> B[Request ID]
+--> C[Logger Middleware]
+--> D[Recovery Middleware]
+--> E[Handler]
+--> F[JSON Response]
+```
+
+---
+
+## Mermaid - Product Search Architecture
+
+```mermaid
+flowchart TD
+
+A[Search API]
+--> B[Usecase Search]
+
+B --> C[Elasticsearch Repository]
+
+C --> D[multi_match Query]
+
+D --> E[Fuzzy Search]
+
+E --> F[Search Results]
+
+F --> G[Recommendation Query]
+
+G --> H[Recommended Products]
+```
+
+---
+
+## Mermaid - Elasticsearch Recommendation
+
+```mermaid
+flowchart TD
+
+A[Product Document]
+--> B[more_like_this]
+
+B --> C[title]
+B --> D[description]
+
+C --> E[Similarity Scoring]
+D --> E
+
+E --> F[Recommended Products]
+```
+
+---
+
+## Mermaid - Docker Services
+
+```mermaid
+flowchart TD
+
+Docker[Docker Compose]
+
+Docker --> API[API Server]
+Docker --> Poller[Outbox Poller]
+Docker --> Consumer[RabbitMQ Consumer]
+Docker --> MySQL[(MySQL)]
+Docker --> RabbitMQ[(RabbitMQ)]
+Docker --> Elasticsearch[(Elasticsearch)]
+```
+
+---
+
+## Mermaid - CI/CD Pipeline
+
+```mermaid
+flowchart LR
+
+Feature[feature branch]
+--> Development[development]
+--> Main[main]
+
+Main --> GithubActions[GitHub Actions]
+
+GithubActions --> Build[Docker Build]
+
+Build --> DockerHub[DockerHub Push]
+```
+
+---
+
+## Mermaid - Logging Pipeline
+
+```mermaid
+flowchart TD
+
+A[Application Logs]
+--> B[Zerolog]
+
+B --> C[Console Output]
+
+B --> D[Filebeat]
+
+D --> E[Elasticsearch]
+
+E --> F[Kibana Dashboard]
+```
+
+---
+
+## Mermaid - Pagination Flow
+
+```mermaid
+flowchart TD
+
+A[Client Request]
+--> B[Parse Pagination]
+
+B --> C[page]
+B --> D[limit]
+
+C --> E[Repository Query]
+D --> E
+
+E --> F[Pagination Meta]
+```
+
+---
+
+## Mermaid - API Response Structure
+
+```mermaid
+flowchart TD
+
+A[API Response]
+
+A --> B[success]
+A --> C[message]
+A --> D[data]
+A --> E[meta]
+
+E --> F[page]
+E --> G[limit]
+E --> H[total]
+E --> I[total_pages]
+```
+
+---
+
+## Mermaid - Typo Tolerant Search
+
+```mermaid
+flowchart TD
+
+A[iphne]
+--> B[Fuzziness AUTO]
+--> C[iphone]
+
+D[androis]
+--> E[Fuzziness AUTO]
+--> F[android]
+
+G[samsng]
+--> H[Fuzziness AUTO]
+--> I[samsung]
+```
+
+---
+
+## Mermaid - Dependency Rule
+
+```mermaid
+flowchart BT
+
+Domain[Domain Layer]
+
+Repository[Repository Layer]
+Usecase[Usecase Layer]
+Delivery[Delivery Layer]
+
+Repository --> Domain
+Usecase --> Domain
+Delivery --> Usecase
+```
+
+---
+
+## Mermaid - Project Folder Responsibility
+
+```mermaid
+mindmap
+  root((content-hub))
+    delivery
+      handler
+      middleware
+      request
+      response
+
+    usecase
+      business logic
+      orchestration
+
+    repository
+      mysql
+      elasticsearch
+
+    infrastructure
+      mysql
+      rabbitmq
+      elasticsearch
+
+    helper
+      validation
+      pagination
+
+    logger
+      zerolog
+
+    outbox
+      poller
+
+    docs
+      swagger
+
+    postman
+      api testing
+```
+
+---
+
+## Mermaid - Full Data Flow
+
+```mermaid
+flowchart LR
+
+Client --> API
+
+API --> Usecase
+
+Usecase --> MySQL
+Usecase --> Outbox
+
+Outbox --> Poller
+
+Poller --> RabbitMQ
+
+RabbitMQ --> Consumer
+
+Consumer --> Elasticsearch
+
+Elasticsearch --> SearchAPI[Search Endpoint]
+
+SearchAPI --> Client
+```
+
+---
+
+## Mermaid - Search Query Example
+
+```mermaid
+flowchart TD
+
+A[User Query]
+--> B[multi_match]
+
+B --> C[title^3]
+B --> D[description]
+
+C --> E[Fuzziness AUTO]
+D --> E
+
+E --> F[Ranked Search Results]
+```
+
+---
+
+## Mermaid - Graceful Shutdown
+
+```mermaid
+flowchart TD
+
+A[SIGINT / SIGTERM]
+--> B[Stop HTTP Server]
+--> C[Close RabbitMQ]
+--> D[Close Database]
+--> E[Shutdown Complete]
+```
+
+---
+
+## Mermaid - Validation Flow
+
+```mermaid
+flowchart TD
+
+A[Incoming JSON]
+--> B[DTO Validation]
+
+B --> C{Valid?}
+
+C -->|No| D[Validation Error Response]
+
+C -->|Yes| E[Continue to Usecase]
+```
+
+---
+
+## Mermaid - Structured Logging Example
+
+```mermaid
+flowchart TD
+
+A[HTTP Request]
+--> B[Request ID]
+
+B --> C[Zerolog Fields]
+
+C --> D[service]
+C --> E[event]
+C --> F[duration_ms]
+C --> G[status_code]
+
+D --> H[JSON Log Output]
+E --> H
+F --> H
+G --> H
+```
+
+---
+
+## Final Validation Checklist
+
+
+
+# Final Validation Checklist
+
+## API Validation
+
+- [x] Create product API
+- [x] Create news API
+- [x] Pagination response validation
+- [x] Standard response consistency
+- [x] Validation error consistency
+- [x] Swagger endpoint validation
+
+---
+
+## Event-Driven Validation
+
+- [x] Outbox event inserted correctly
+- [x] Poller publishes message to RabbitMQ
+- [x] RabbitMQ consumer receives message
+
+---
+
+## Elasticsearch Validation
+
+- [x] Product indexed successfully
+- [x] News indexed successfully
+- [x] Search result accuracy validated
+- [x] Elasticsearch persistence after restart
+
+---
+
+## Search Validation
+
+### Standard Search
+
+- [x] iphone
+- [x] samsung
+- [x] laptop
+- [x] artificial intelligence
+
+### Fuzzy Search
+
+- [x] iphne → iphone
+- [x] androis → android
+- [x] samsng → samsung
+- [x] laptpo → laptop
+
+---
+
+## Recommendation Validation
+
+Expected recommendation quality:
+
+```txt
+iphone
+```
+
+Expected recommendations:
+
+- iPhone 15
+- iPhone 16
+- Apple accessories
+- Similar smartphone products
+
+Validation:
+
+- [x] Similarity quality acceptable
+- [x] Recommendations generated automatically
+
+---
+
+## Middleware Validation
+
+- [x] Request ID middleware
+- [x] Structured logger middleware
+- [x] Recovery middleware
+
+---
+
+## Infrastructure Validation
+
+- [x] Graceful shutdown works
+- [x] Docker compose restart persistence
+- [x] MySQL persistence
+- [x] Elasticsearch persistence
+
+---
+
+# Current Project Status
+
+```txt
+Backend Architecture        : DONE
+Search System               : DONE
+Recommendation System       : DONE
+Async Event Pipeline        : DONE
+Observability Foundation    : DONE
+Docker Infrastructure       : DONE
+Production Structure        : DONE
+```
+
+---
+
+# Author
+
+```txt
+reski
+programmer.reski@gmail.com
+
+```

@@ -1,50 +1,11 @@
-Progress tersimpan sampai titik ini:
 
-Clean Architecture stabilized
-CRUD Product & News complete
-Outbox Pattern complete
-RabbitMQ integration complete
-Elasticsearch search complete
-Standardized pagination complete
-Validation formatter complete
-Swagger complete
-Health check complete
-Graceful shutdown complete
-GitHub Actions CI/CD complete
-DockerHub auto push complete
-README upgraded to production-grade documentation
-
-
-
-
-
-recommendation news dan product
-
-
-
-Next session focus:
-
-
-Recover Middleware
-Request ID Middleware
-Structured logging
-HTTP access logging
-Error tracing
-Production observability foundation
-
-
-Prometheus metrics
-
+how to run
 
 down:
     docker compose down -v
 
 up:
     docker compose up --build
-
-
-
-
 
 
 RabbitMQ

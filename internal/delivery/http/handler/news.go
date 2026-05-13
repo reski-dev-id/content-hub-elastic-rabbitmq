@@ -78,6 +78,66 @@ func (h *NewsHandler) Create(c *gin.Context) {
 	)
 }
 
+// SearchNews godoc
+// @Summary Search news
+// @Description Search news with recommendations
+// @Tags news
+// @Accept json
+// @Produce json
+// @Param q query string true "Search query"
+// @Param page query int false "Page"
+// @Param limit query int false "Limit"
+// @Param category_id query int false "Category ID"
+// @Success 200 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /v1/news/search [get]
+func (h *NewsHandler) Search(c *gin.Context) {
+
+	pagination := helper.ParsePagination(c)
+
+	q := c.Query("q")
+
+	var categoryID *uint64
+
+	if cid := c.Query("category_id"); cid != "" {
+
+		val := helper.ParseUint(cid)
+
+		categoryID = &val
+	}
+
+	data, total, err := h.uc.Search(
+		q,
+		categoryID,
+		pagination.Page,
+		pagination.Limit,
+	)
+
+	if err != nil {
+
+		response.Error(
+			c,
+			http.StatusInternalServerError,
+			"failed to search news",
+			err.Error(),
+		)
+
+		return
+	}
+
+	response.SuccessWithMeta(
+		c,
+		http.StatusOK,
+		"news search fetched successfully",
+		data,
+		helper.NewPagination(
+			pagination.Page,
+			pagination.Limit,
+			total,
+		),
+	)
+}
+
 // GetNewsByID godoc
 // @Summary Get news detail
 // @Description Get news by ID
@@ -90,7 +150,7 @@ func (h *NewsHandler) Create(c *gin.Context) {
 // @Router /v1/news/{id} [get]
 func (h *NewsHandler) GetByID(c *gin.Context) {
 
-	id := parseUint(c.Param("id"))
+	id := helper.ParseUint(c.Param("id"))
 
 	data, err := h.uc.GetByID(id)
 
@@ -133,7 +193,7 @@ func (h *NewsHandler) GetAll(c *gin.Context) {
 	var categoryID *uint64
 
 	if cid := c.Query("category_id"); cid != "" {
-		val := parseUint(cid)
+		val := helper.ParseUint(cid)
 		categoryID = &val
 	}
 
@@ -182,7 +242,7 @@ func (h *NewsHandler) GetAll(c *gin.Context) {
 // @Router /v1/news/{id} [put]
 func (h *NewsHandler) Update(c *gin.Context) {
 
-	id := parseUint(c.Param("id"))
+	id := helper.ParseUint(c.Param("id"))
 
 	var req request.UpdateNewsRequest
 
@@ -240,7 +300,7 @@ func (h *NewsHandler) Update(c *gin.Context) {
 // @Router /v1/news/{id} [delete]
 func (h *NewsHandler) Delete(c *gin.Context) {
 
-	id := parseUint(c.Param("id"))
+	id := helper.ParseUint(c.Param("id"))
 
 	if err := h.uc.Delete(id); err != nil {
 

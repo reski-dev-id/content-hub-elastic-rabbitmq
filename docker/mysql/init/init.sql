@@ -87,6 +87,7 @@ UNLOCK TABLES;
 DROP TABLE IF EXISTS `outbox_events`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
+
 CREATE TABLE `outbox_events` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `aggregate_type` enum('product','news') NOT NULL,
@@ -99,15 +100,405 @@ CREATE TABLE `outbox_events` (
   PRIMARY KEY (`id`),
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `outbox_events`
---
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `outbox_events` WRITE;
 /*!40000 ALTER TABLE `outbox_events` DISABLE KEYS */;
-INSERT INTO `outbox_events` VALUES (1,'product',1,'created','{\"title\": \"Laptop ASUS ROG\"}','pending','2026-05-03 04:35:36',NULL),(2,'product',2,'created','{\"title\": \"MacBook Pro\"}','pending','2026-05-03 04:35:36',NULL),(3,'product',3,'created','{\"title\": \"iPhone 15\"}','pending','2026-05-03 04:35:36',NULL),(4,'product',4,'updated','{\"price\": 18000000}','pending','2026-05-03 04:35:36',NULL),(5,'product',5,'created','{\"title\": \"iPad Air\"}','pending','2026-05-03 04:35:36',NULL),(6,'news',1,'published','{\"title\": \"AI Dunia\"}','pending','2026-05-03 04:35:36',NULL),(7,'news',2,'published','{\"title\": \"5G\"}','pending','2026-05-03 04:35:36',NULL),(8,'news',3,'created','{\"title\": \"Startup\"}','pending','2026-05-03 04:35:36',NULL),(9,'news',4,'updated','{\"title\": \"Gadget\"}','pending','2026-05-03 04:35:36',NULL),(10,'news',5,'published','{\"title\": \"Security\"}','pending','2026-05-03 04:35:36',NULL),(11,'product',6,'created','{\"title\": \"Mouse\"}','pending','2026-05-03 04:35:36',NULL),(12,'product',7,'created','{\"title\": \"PS5\"}','pending','2026-05-03 04:35:36',NULL),(13,'product',8,'created','{\"title\": \"Sony XM5\"}','pending','2026-05-03 04:35:36',NULL),(14,'product',9,'updated','{\"price\": 8000000}','pending','2026-05-03 04:35:36',NULL),(15,'product',10,'created','{\"title\": \"Router\"}','pending','2026-05-03 04:35:36',NULL),(16,'news',6,'published','{\"title\": \"AI Industri\"}','pending','2026-05-03 04:35:36',NULL),(17,'news',7,'published','{\"title\": \"Cloud\"}','pending','2026-05-03 04:35:36',NULL),(18,'news',8,'created','{\"title\": \"Funding\"}','pending','2026-05-03 04:35:36',NULL),(19,'news',9,'updated','{\"title\": \"Review\"}','pending','2026-05-03 04:35:36',NULL),(20,'news',10,'published','{\"title\": \"Data Breach\"}','pending','2026-05-03 04:35:36',NULL);
+
+INSERT INTO `outbox_events`
+(
+  id,
+  aggregate_type,
+  aggregate_id,
+  event_type,
+  payload,
+  status,
+  created_at,
+  sent_at
+)
+VALUES
+
+(
+  1,
+  'product',
+  1,
+  'product_created',
+  '{
+    "id": 1,
+    "category_id": 1,
+    "title": "Laptop ASUS ROG",
+    "slug": "laptop-asus-rog",
+    "description": "Gaming laptop high performance",
+    "price": 25000000,
+    "status": "active"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  2,
+  'product',
+  2,
+  'product_created',
+  '{
+    "id": 2,
+    "category_id": 1,
+    "title": "Laptop MacBook Pro",
+    "slug": "macbook-pro",
+    "description": "Apple laptop M3 chip",
+    "price": 32000000,
+    "status": "active"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  3,
+  'product',
+  3,
+  'product_created',
+  '{
+    "id": 3,
+    "category_id": 2,
+    "title": "iPhone 15 Pro",
+    "slug": "iphone-15-pro",
+    "description": "Flagship smartphone Apple",
+    "price": 21000000,
+    "status": "active"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  4,
+  'product',
+  4,
+  'product_updated',
+  '{
+    "id": 4,
+    "category_id": 2,
+    "title": "Samsung Galaxy S24",
+    "slug": "galaxy-s24",
+    "description": "Android flagship Samsung",
+    "price": 18000000,
+    "status": "active"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  5,
+  'product',
+  5,
+  'product_created',
+  '{
+    "id": 5,
+    "category_id": 3,
+    "title": "iPad Air",
+    "slug": "ipad-air",
+    "description": "Tablet Apple ringan",
+    "price": 12000000,
+    "status": "active"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  6,
+  'news',
+  1,
+  'news_published',
+  '{
+    "id": 1,
+    "category_id": 6,
+    "title": "AI Mengubah Dunia",
+    "slug": "ai-mengubah-dunia",
+    "content": "AI berkembang pesat",
+    "author": "Admin",
+    "status": "published"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  7,
+  'news',
+  2,
+  'news_published',
+  '{
+    "id": 2,
+    "category_id": 7,
+    "title": "Teknologi 5G Global",
+    "slug": "teknologi-5g",
+    "content": "5G semakin luas",
+    "author": "Admin",
+    "status": "published"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  8,
+  'news',
+  3,
+  'news_created',
+  '{
+    "id": 3,
+    "category_id": 8,
+    "title": "Startup Unicorn Baru",
+    "slug": "startup-unicorn",
+    "content": "Startup mencapai valuasi tinggi",
+    "author": "Admin",
+    "status": "published"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  9,
+  'news',
+  4,
+  'news_updated',
+  '{
+    "id": 4,
+    "category_id": 9,
+    "title": "Gadget Terbaru 2026",
+    "slug": "gadget-2026",
+    "content": "Banyak inovasi gadget",
+    "author": "Admin",
+    "status": "published"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  10,
+  'news',
+  5,
+  'news_published',
+  '{
+    "id": 5,
+    "category_id": 10,
+    "title": "Cyber Security Trend",
+    "slug": "cyber-security",
+    "content": "Ancaman meningkat",
+    "author": "Admin",
+    "status": "published"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  11,
+  'product',
+  6,
+  'product_created',
+  '{
+    "id": 6,
+    "category_id": 4,
+    "title": "Mouse Logitech G Pro",
+    "slug": "logitech-g-pro",
+    "description": "Mouse gaming ringan",
+    "price": 1500000,
+    "status": "active"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  12,
+  'product',
+  7,
+  'product_created',
+  '{
+    "id": 7,
+    "category_id": 5,
+    "title": "PS5 Console",
+    "slug": "ps5-console",
+    "description": "Next gen console",
+    "price": 9000000,
+    "status": "active"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  13,
+  'product',
+  8,
+  'product_created',
+  '{
+    "id": 8,
+    "category_id": 11,
+    "title": "Sony WH-1000XM5",
+    "slug": "sony-xm5",
+    "description": "Noise cancelling headphone",
+    "price": 5000000,
+    "status": "active"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  14,
+  'product',
+  9,
+  'product_updated',
+  '{
+    "id": 9,
+    "category_id": 12,
+    "title": "Apple Watch Series 9",
+    "slug": "apple-watch-s9",
+    "description": "Smartwatch Apple",
+    "price": 8000000,
+    "status": "active"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  15,
+  'product',
+  10,
+  'product_created',
+  '{
+    "id": 10,
+    "category_id": 13,
+    "title": "TP-Link AX3000",
+    "slug": "tplink-ax3000",
+    "description": "Router wifi 6",
+    "price": 1200000,
+    "status": "active"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  16,
+  'news',
+  6,
+  'news_published',
+  '{
+    "id": 6,
+    "category_id": 6,
+    "title": "AI di Industri",
+    "slug": "ai-industri",
+    "content": "Implementasi AI",
+    "author": "Admin",
+    "status": "published"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  17,
+  'news',
+  7,
+  'news_published',
+  '{
+    "id": 7,
+    "category_id": 7,
+    "title": "Cloud Computing",
+    "slug": "cloud-computing",
+    "content": "Cloud makin populer",
+    "author": "Admin",
+    "status": "published"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  18,
+  'news',
+  8,
+  'news_created',
+  '{
+    "id": 8,
+    "category_id": 8,
+    "title": "Pendanaan Startup",
+    "slug": "funding-startup",
+    "content": "Investor aktif",
+    "author": "Admin",
+    "status": "published"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  19,
+  'news',
+  9,
+  'news_updated',
+  '{
+    "id": 9,
+    "category_id": 9,
+    "title": "Review Smartphone",
+    "slug": "review-smartphone",
+    "content": "Perbandingan flagship",
+    "author": "Admin",
+    "status": "published"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+),
+
+(
+  20,
+  'news',
+  10,
+  'news_published',
+  '{
+    "id": 10,
+    "category_id": 10,
+    "title": "Data Breach Besar",
+    "slug": "data-breach",
+    "content": "Kebocoran data global",
+    "author": "Admin",
+    "status": "published"
+  }',
+  'pending',
+  '2026-05-03 04:35:36',
+  NULL
+);
+
 /*!40000 ALTER TABLE `outbox_events` ENABLE KEYS */;
 UNLOCK TABLES;
 
