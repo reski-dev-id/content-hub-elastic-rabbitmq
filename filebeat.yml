@@ -1,11 +1,19 @@
 filebeat.inputs:
-  - type: container
+  - type: filestream
+    id: docker-logs
     enabled: true
+
     paths:
       - /var/lib/docker/containers/*/*.log
 
+    parsers:
+      - container:
+          stream: all
+          format: docker
+
 processors:
-  - add_docker_metadata: ~
+  - add_docker_metadata:
+      host: "unix:///var/run/docker.sock"
 
 setup.kibana:
   host: "http://kibana:5601"
