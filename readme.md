@@ -1,7 +1,7 @@
 # Content Hub
 
-Katalog Produk & Berita dengan full-text search.
-Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunakan **Clean Architecture**.
+Product & News catalog with full-text search.
+Built with **Golang**, **MySQL**, **RabbitMQ**, and **Elasticsearch** using **Clean Architecture**.
 
 ---
 
@@ -55,10 +55,10 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunaka
 │               Delivery Layer                │
 │           internal/delivery/http            │
 │                                             │
-│  - Handler                                 │
-│  - Middleware                              │
-│  - Request DTO                             │
-│  - Response Formatter                      │
+│  - Handler                                  │
+│  - Middleware                               │
+│  - Request DTO                              │
+│  - Response Formatter                       │
 └─────────────────────────────────────────────┘
                      ↓
 ┌─────────────────────────────────────────────┐
@@ -88,20 +88,20 @@ Built with **Golang**, **MySQL**, **RabbitMQ**, dan **Elasticsearch** menggunaka
 │  - Usecase Interface                        │
 └─────────────────────────────────────────────┘
 
-         ↑ dependency hanya ke dalam ↑
+         ↑ dependencies only point inward ↑
 ```
 
-### Aturan utama
+### Main Rules
 
-- Tiap layer hanya boleh depend ke layer di bawahnya
-- Domain layer tidak boleh import package luar (pure Go)
-- Dependency ditanamkan via interface, bukan concrete struct
-- Handler tidak langsung akses repository
-- Usecase hanya bergantung pada interface repository
+- Each layer may only depend on the layer below it
+- Domain layer must not import external packages (pure Go)
+- Dependencies are injected through interfaces, not concrete structs
+- Handlers must not directly access repositories
+- Usecases only depend on repository interfaces
 
 ---
 
-## Struktur Project
+## Project Structure
 
 ```txt
 content-hub/
@@ -279,8 +279,6 @@ User Search Query
 ┌─────────────────────┐
 │ Multi Match Search  │
 │ - title^3           │
-│ - description       │
-│ - content           │
 └──────────┬──────────┘
            │
            ▼
@@ -307,11 +305,11 @@ User Search Query
 
 ### Full-text Search
 
-Menggunakan Elasticsearch `multi_match` query.
+Uses Elasticsearch `multi_match` query.
 
 ### Fuzzy Search
 
-Mendukung typo tolerance:
+Supports typo tolerance:
 
 ```txt
 iphne   → iphone
@@ -319,7 +317,7 @@ androis → android
 samsng  → samsung
 ```
 
-Menggunakan:
+Powered by:
 
 ```json
 {
@@ -329,110 +327,13 @@ Menggunakan:
 
 ### Recommendation Search
 
-Menggunakan Elasticsearch:
+Uses Elasticsearch:
 
 ```txt
 more_like_this
 ```
 
-Recommendation otomatis muncul berdasarkan hasil pertama pencarian.
-
----
-
-## Database Schema (DDL)
-
-```sql
-CREATE TABLE categories (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  slug VARCHAR(100) NOT NULL UNIQUE,
-  type ENUM('product', 'news') NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE products (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  category_id BIGINT UNSIGNED NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  slug VARCHAR(255) NOT NULL UNIQUE,
-  description TEXT,
-  price DECIMAL(15,2) NOT NULL DEFAULT 0,
-  status ENUM('active', 'inactive') DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (category_id) REFERENCES categories(id),
-  INDEX idx_title (title),
-  INDEX idx_category (category_id)
-);
-
-CREATE TABLE news (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  category_id BIGINT UNSIGNED NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  slug VARCHAR(255) NOT NULL UNIQUE,
-  content LONGTEXT,
-  author VARCHAR(100) NOT NULL,
-  status ENUM('draft', 'published') DEFAULT 'draft',
-  published_at TIMESTAMP NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (category_id) REFERENCES categories(id),
-  INDEX idx_title (title),
-  INDEX idx_status_published (status, published_at)
-);
-
-CREATE TABLE outbox_events (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  aggregate_type ENUM('product', 'news') NOT NULL,
-  aggregate_id BIGINT UNSIGNED NOT NULL,
-  event_type VARCHAR(50) NOT NULL,
-  payload JSON NOT NULL,
-  status ENUM('pending', 'sent') DEFAULT 'pending',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  sent_at TIMESTAMP NULL,
-  INDEX idx_status (status)
-);
-```
-
----
-
-## Elasticsearch Index Mapping
-
-### Index: products
-
-```json
-{
-  "mappings": {
-    "properties": {
-      "id": { "type": "long" },
-      "title": { "type": "text", "analyzer": "standard" },
-      "description": { "type": "text" },
-      "category_id": { "type": "long" },
-      "price": { "type": "float" },
-      "status": { "type": "keyword" },
-      "updated_at": { "type": "date" }
-    }
-  }
-}
-```
-
-### Index: news
-
-```json
-{
-  "mappings": {
-    "properties": {
-      "id": { "type": "long" },
-      "title": { "type": "text", "analyzer": "standard" },
-      "content": { "type": "text" },
-      "category_id": { "type": "long" },
-      "author": { "type": "keyword" },
-      "status": { "type": "keyword" },
-      "published_at": { "type": "date" }
-    }
-  }
-}
-```
+Recommendations are automatically generated from the first search result.
 
 ---
 
@@ -441,15 +342,15 @@ CREATE TABLE outbox_events (
 | Method | Path | Query Params | Description |
 |--------|------|--------------|-----------|
 | POST | /v1/products | — | Create product |
-| GET | /v1/products | page, limit, category_id | List product |
-| GET | /v1/products/search | q, page, limit, category_id | Search product |
-| GET | /v1/products/:id | — | Product detail |
+| GET | /v1/products | page, limit, category_id | Get product list |
+| GET | /v1/products/search | q, page, limit, category_id | Search products |
+| GET | /v1/products/:id | — | Get product detail |
 | PUT | /v1/products/:id | — | Update product |
 | DELETE | /v1/products/:id | — | Delete product |
 | POST | /v1/news | — | Create news |
-| GET | /v1/news | page, limit, category_id | List news |
+| GET | /v1/news | page, limit, category_id | Get news list |
 | GET | /v1/news/search | q, page, limit, category_id | Search news |
-| GET | /v1/news/:id | — | News detail |
+| GET | /v1/news/:id | — | Get news detail |
 | PUT | /v1/news/:id | — | Update news |
 | DELETE | /v1/news/:id | — | Delete news |
 | GET | /health | — | Health check |
@@ -549,7 +450,7 @@ Example response:
 
 ---
 
-## Setup & Menjalankan
+## Setup & Run
 
 ### 1. Clone Repository
 
@@ -576,13 +477,13 @@ docker compose build
 
 ---
 
-### 4. Jalankan Semua Service
+### 4. Start All Services
 
 ```bash
 docker compose up
 ```
 
-Service yang akan berjalan:
+Running services:
 
 - MySQL
 - RabbitMQ
@@ -621,11 +522,11 @@ feature/*
 → DockerHub auto push
 ```
 
-Saat merge ke branch main:
+When merged into `main`:
 
-- GitHub Actions otomatis build docker image
-- Push image ke DockerHub
-- Generate latest image tag
+- GitHub Actions automatically builds Docker image
+- Pushes image to DockerHub
+- Generates latest image tag
 
 GitHub Actions workflow:
 
@@ -635,7 +536,7 @@ GitHub Actions workflow:
 
 ---
 
-## Flow Sistem
+## System Flow
 
 ```txt
 Client Request
@@ -655,9 +556,9 @@ Elasticsearch
 
 ---
 
-## Verifikasi
+## Verification
 
-### List Product
+### List Products
 
 ```bash
 curl http://localhost:8080/v1/products
@@ -689,9 +590,9 @@ curl -X POST http://localhost:8080/v1/news \
 -H "Content-Type: application/json" \
 -d '{
   "category_id": 6,
-  "title": "AI Dunia",
-  "slug": "ai-dunia",
-  "content": "AI berkembang sangat cepat",
+  "title": "AI World",
+  "slug": "ai-world",
+  "content": "AI is rapidly evolving",
   "author": "Reski",
   "status": "published"
 }'
@@ -715,24 +616,24 @@ curl "http://localhost:8080/v1/products/search?q=iphne"
 
 ---
 
-## Prinsip Clean Architecture yang Diterapkan
+## Applied Clean Architecture Principles
 
-| Prinsip | Implementasi |
+| Principle | Implementation |
 |---------|-------------|
-| Dependency Rule | Semua dependency arahnya ke dalam — domain tidak import infrastructure sama sekali |
-| Interface Segregation | Tiap repository dan usecase punya interface tersendiri di domain |
-| Dependency Injection | Dependency diinject manual melalui constructor function |
-| Separation of Concern | Entity, business logic, data access, dan delivery sepenuhnya terpisah |
-| Testability | Semua usecase dan handler mudah di-mock karena hanya bergantung pada interface |
-| Single Responsibility | Tiap struct punya satu tanggung jawab yang jelas |
-| Graceful Shutdown | Server menangani SIGTERM/SIGINT dengan proper cleanup |
-| Async Processing | Outbox pattern + RabbitMQ untuk eventual consistency |
+| Dependency Rule | All dependencies point inward — domain never imports infrastructure |
+| Interface Segregation | Each repository and usecase has its own interface |
+| Dependency Injection | Dependencies injected manually via constructors |
+| Separation of Concern | Entity, business logic, data access, and delivery are fully separated |
+| Testability | Usecases and handlers are easy to mock because they depend on interfaces |
+| Single Responsibility | Each struct has a single clear responsibility |
+| Graceful Shutdown | Server handles SIGTERM/SIGINT with proper cleanup |
+| Async Processing | Outbox pattern + RabbitMQ for eventual consistency |
 
 ---
 
 ## Current Status
 
-Project saat ini sudah memiliki:
+Current project capabilities:
 
 - Production-ready backend foundation
 - Async event-driven architecture
@@ -747,3 +648,4 @@ Project saat ini sudah memiliki:
 - Structured logging middleware
 - Recovery middleware
 - Request ID tracing
+
