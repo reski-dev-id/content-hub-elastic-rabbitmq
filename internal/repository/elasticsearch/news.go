@@ -270,6 +270,7 @@ func (r *NewsRepository) Recommend(
 
 	return newsList, nil
 }
+
 func (r *NewsRepository) Search(
 	ctx context.Context,
 	q string,
@@ -287,10 +288,11 @@ func (r *NewsRepository) Search(
 			"multi_match": map[string]interface{}{
 				"query": q,
 				"fields": []string{
-					"title^3",
-					"content",
+					"title^5",
 				},
-				"fuzziness": "AUTO",
+				"fuzziness":     "AUTO",
+				"prefix_length": 1,
+				"operator":      "and",
 			},
 		},
 	}
