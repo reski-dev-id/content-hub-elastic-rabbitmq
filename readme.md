@@ -1072,3 +1072,106 @@ E --> H
 F --> H
 G --> H
 ```
+
+---
+
+## Final Validation Checklist
+
+### API Validation
+
+- [ ] Create product API
+- [ ] Create news API
+- [ ] Update product API
+- [ ] Update news API
+- [ ] Delete product API
+- [ ] Delete news API
+- [ ] Pagination response validation
+- [ ] Standard response consistency
+- [ ] Validation error consistency
+- [ ] Swagger endpoint validation
+
+---
+
+### Event-Driven Validation
+
+- [ ] Outbox event inserted correctly
+- [ ] Poller publishes message to RabbitMQ
+- [ ] RabbitMQ consumer receives message
+- [ ] Retry queue works correctly
+- [ ] Dead-letter queue works correctly
+- [ ] Failed event moved to DLQ
+
+---
+
+### Elasticsearch Validation
+
+- [ ] Product indexed successfully
+- [ ] News indexed successfully
+- [ ] Search result accuracy validated
+- [ ] Update sync validated
+- [ ] Delete sync validated
+- [ ] Elasticsearch persistence after restart
+
+---
+
+### Search Validation
+
+#### Standard Search
+
+- [ ] iphone
+- [ ] samsung
+- [ ] laptop
+- [ ] artificial intelligence
+
+#### Fuzzy Search
+
+- [ ] iphne → iphone
+- [ ] androis → android
+- [ ] samsng → samsung
+- [ ] laptpo → laptop
+
+---
+
+### Recommendation Validation
+
+Expected recommendation quality:
+
+Search:
+```txt
+iphone
+```
+
+Expected recommendations:
+
+- iPhone 15
+- iPhone 16
+- Apple accessories
+- Similar smartphone products
+
+Validation:
+
+- [ ] Similarity quality acceptable
+- [ ] Irrelevant recommendations minimized
+- [ ] Recommendations generated automatically
+
+---
+
+### Middleware Validation
+
+- [ ] Request ID middleware
+- [ ] Structured logger middleware
+- [ ] Recovery middleware
+- [ ] Panic recovery validation
+
+---
+
+### Infrastructure Validation
+
+- [ ] Graceful shutdown works
+- [ ] Docker compose restart persistence
+- [ ] MySQL persistence
+- [ ] Elasticsearch persistence
+- [ ] RabbitMQ persistence
+
+---
+
