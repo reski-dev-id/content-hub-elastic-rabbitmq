@@ -101,7 +101,7 @@ func (h *ProductHandler) Search(c *gin.Context) {
 
 	if cid := c.Query("category_id"); cid != "" {
 
-		val := parseUint(cid)
+		val := helper.ParseUint(cid)
 
 		categoryID = &val
 	}
@@ -152,7 +152,7 @@ func (h *ProductHandler) GetByID(c *gin.Context) {
 
 	id := c.Param("id")
 
-	data, err := h.uc.GetByID(parseUint(id))
+	data, err := h.uc.GetByID(helper.ParseUint(id))
 
 	if err != nil {
 
@@ -205,7 +205,7 @@ func (h *ProductHandler) Update(c *gin.Context) {
 	}
 
 	product := entity.Product{
-		ID:          parseUint(id),
+		ID:          helper.ParseUint(id),
 		CategoryID:  req.CategoryID,
 		Title:       req.Title,
 		Slug:        req.Slug,
@@ -254,7 +254,7 @@ func (h *ProductHandler) GetAll(c *gin.Context) {
 
 	if cid := c.Query("category_id"); cid != "" {
 
-		val := parseUint(cid)
+		val := helper.ParseUint(cid)
 
 		categoryID = &val
 	}
@@ -302,7 +302,7 @@ func (h *ProductHandler) GetAll(c *gin.Context) {
 // @Router /v1/products/{id} [delete]
 func (h *ProductHandler) Delete(c *gin.Context) {
 
-	id := parseUint(c.Param("id"))
+	id := helper.ParseUint(c.Param("id"))
 
 	if err := h.uc.Delete(id); err != nil {
 

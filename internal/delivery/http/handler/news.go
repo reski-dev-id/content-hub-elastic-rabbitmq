@@ -101,7 +101,7 @@ func (h *NewsHandler) Search(c *gin.Context) {
 
 	if cid := c.Query("category_id"); cid != "" {
 
-		val := parseUint(cid)
+		val := helper.ParseUint(cid)
 
 		categoryID = &val
 	}
@@ -150,7 +150,7 @@ func (h *NewsHandler) Search(c *gin.Context) {
 // @Router /v1/news/{id} [get]
 func (h *NewsHandler) GetByID(c *gin.Context) {
 
-	id := parseUint(c.Param("id"))
+	id := helper.ParseUint(c.Param("id"))
 
 	data, err := h.uc.GetByID(id)
 
@@ -193,7 +193,7 @@ func (h *NewsHandler) GetAll(c *gin.Context) {
 	var categoryID *uint64
 
 	if cid := c.Query("category_id"); cid != "" {
-		val := parseUint(cid)
+		val := helper.ParseUint(cid)
 		categoryID = &val
 	}
 
@@ -242,7 +242,7 @@ func (h *NewsHandler) GetAll(c *gin.Context) {
 // @Router /v1/news/{id} [put]
 func (h *NewsHandler) Update(c *gin.Context) {
 
-	id := parseUint(c.Param("id"))
+	id := helper.ParseUint(c.Param("id"))
 
 	var req request.UpdateNewsRequest
 
@@ -300,7 +300,7 @@ func (h *NewsHandler) Update(c *gin.Context) {
 // @Router /v1/news/{id} [delete]
 func (h *NewsHandler) Delete(c *gin.Context) {
 
-	id := parseUint(c.Param("id"))
+	id := helper.ParseUint(c.Param("id"))
 
 	if err := h.uc.Delete(id); err != nil {
 
