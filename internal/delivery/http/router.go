@@ -13,7 +13,6 @@ import (
 func NewRouter(
 	ph *handler.ProductHandler,
 	nh *handler.NewsHandler,
-	sh *handler.SearchHandler,
 	hh *handler.HealthHandler,
 ) *gin.Engine {
 
@@ -41,6 +40,7 @@ func NewRouter(
 		// Product
 		v1.POST("/products", ph.Create)
 		v1.GET("/products", ph.GetAll)
+		v1.GET("/products/search", ph.Search)
 		v1.GET("/products/:id", ph.GetByID)
 		v1.PUT("/products/:id", ph.Update)
 		v1.DELETE("/products/:id", ph.Delete)
@@ -48,12 +48,10 @@ func NewRouter(
 		// News
 		v1.POST("/news", nh.Create)
 		v1.GET("/news", nh.GetAll)
+		v1.GET("/news/search", nh.Search)
 		v1.GET("/news/:id", nh.GetByID)
 		v1.PUT("/news/:id", nh.Update)
 		v1.DELETE("/news/:id", nh.Delete)
-
-		// Search
-		v1.GET("/search", sh.Search)
 	}
 
 	return r

@@ -1,25 +1,33 @@
 package usecase
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/domain/repository"
 	domain "content-hub/internal/domain/usecase"
+
+	esRepo "content-hub/internal/repository/elasticsearch"
+
 	"content-hub/internal/logger"
 )
 
 type productUsecase struct {
-	repo repository.ProductRepository
+	repo   repository.ProductRepository
+	esRepo *esRepo.ProductRepository
 }
 
 func NewProductUsecase(
 	r repository.ProductRepository,
+	es *esRepo.ProductRepository,
 ) domain.ProductUsecase {
 	return &productUsecase{
-		repo: r,
+		repo:   r,
+		esRepo: es,
 	}
 }
 
@@ -187,6 +195,52 @@ func (u *productUsecase) GetByID(
 	return product, nil
 }
 
+func (u *productUsecase) Recommend(
+	id uint64,
+	limit int,
+) ([]entity.Product, error) {
+
+	start := time.Now()
+
+	products, err := u.esRepo.Recommend(
+		context.Background(),
+		strconv.FormatUint(id, 10),
+		limit,
+	)
+
+	if err != nil {
+
+		logger.Error(err).
+			Str("service", "usecase").
+			Str("event", "product_recommendation_failed").
+			Uint64("product_id", id).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
+			Msg("failed get product recommendations")
+
+		return nil, err
+	}
+
+	logger.Info().
+		Str("service", "usecase").
+		Str("event", "product_recommendations_fetched").
+		Uint64("product_id", id).
+		Int("count", len(products)).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
+		Msg("product recommendations fetched")
+
+	return products, nil
+}
+
 func (u *productUsecase) Update(
 	p *entity.Product,
 ) error {
@@ -297,4 +351,73 @@ func (u *productUsecase) Delete(
 		Msg("product deleted")
 
 	return nil
+}
+
+func (u *productUsecase) Search(
+	q string,
+	categoryID *uint64,
+	page int,
+	limit int,
+) (*domain.ProductSearchResponse, int64, error) {
+
+	start := time.Now()
+
+	items, total, err := u.esRepo.Search(
+		context.Background(),
+		q,
+		categoryID,
+		page,
+		limit,
+	)
+
+	if err != nil {
+
+		logger.Error(err).
+			Str("service", "usecase").
+			Str("event", "product_search_failed").
+			Str("query", q).
+			Int("page", page).
+			Int("limit", limit).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
+			Msg("failed search products")
+
+		return nil, 0, err
+	}
+
+	response := &domain.ProductSearchResponse{
+		Items:           items,
+		Recommendations: []entity.Product{},
+	}
+
+	if len(items) > 0 {
+
+		recommendations, err := u.Recommend(
+			items[0].ID,
+			3,
+		)
+
+		if err == nil {
+			response.Recommendations = recommendations
+		}
+	}
+
+	logger.Info().
+		Str("service", "usecase").
+		Str("event", "product_search_completed").
+		Str("query", q).
+		Int64("total", total).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
+		Msg("product search completed")
+
+	return response, total, nil
 }

@@ -78,6 +78,66 @@ func (h *ProductHandler) Create(c *gin.Context) {
 	)
 }
 
+// SearchProducts godoc
+// @Summary Search products
+// @Description Search products with recommendations
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param q query string true "Search query"
+// @Param page query int false "Page"
+// @Param limit query int false "Limit"
+// @Param category_id query int false "Category ID"
+// @Success 200 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /v1/products/search [get]
+func (h *ProductHandler) Search(c *gin.Context) {
+
+	pagination := helper.ParsePagination(c)
+
+	q := c.Query("q")
+
+	var categoryID *uint64
+
+	if cid := c.Query("category_id"); cid != "" {
+
+		val := parseUint(cid)
+
+		categoryID = &val
+	}
+
+	data, total, err := h.uc.Search(
+		q,
+		categoryID,
+		pagination.Page,
+		pagination.Limit,
+	)
+
+	if err != nil {
+
+		response.Error(
+			c,
+			http.StatusInternalServerError,
+			"failed to search products",
+			err.Error(),
+		)
+
+		return
+	}
+
+	response.SuccessWithMeta(
+		c,
+		http.StatusOK,
+		"products search fetched successfully",
+		data,
+		helper.NewPagination(
+			pagination.Page,
+			pagination.Limit,
+			total,
+		),
+	)
+}
+
 // GetProductByID godoc
 // @Summary Get product detail
 // @Description Get product by ID
@@ -193,7 +253,9 @@ func (h *ProductHandler) GetAll(c *gin.Context) {
 	var categoryID *uint64
 
 	if cid := c.Query("category_id"); cid != "" {
+
 		val := parseUint(cid)
+
 		categoryID = &val
 	}
 

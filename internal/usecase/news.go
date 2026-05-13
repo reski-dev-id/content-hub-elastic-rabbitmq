@@ -1,25 +1,33 @@
 package usecase
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"content-hub/internal/domain/entity"
 	"content-hub/internal/domain/repository"
 	domain "content-hub/internal/domain/usecase"
+
+	esRepo "content-hub/internal/repository/elasticsearch"
+
 	"content-hub/internal/logger"
 )
 
 type newsUsecase struct {
-	repo repository.NewsRepository
+	repo   repository.NewsRepository
+	esRepo *esRepo.NewsRepository
 }
 
 func NewNewsUsecase(
 	r repository.NewsRepository,
+	es *esRepo.NewsRepository,
 ) domain.NewsUsecase {
 	return &newsUsecase{
-		repo: r,
+		repo:   r,
+		esRepo: es,
 	}
 }
 
@@ -187,6 +195,52 @@ func (u *newsUsecase) GetByID(
 	return news, nil
 }
 
+func (u *newsUsecase) Recommend(
+	id uint64,
+	limit int,
+) ([]entity.News, error) {
+
+	start := time.Now()
+
+	newsList, err := u.esRepo.Recommend(
+		context.Background(),
+		strconv.FormatUint(id, 10),
+		limit,
+	)
+
+	if err != nil {
+
+		logger.Error(err).
+			Str("service", "usecase").
+			Str("event", "news_recommendation_failed").
+			Uint64("news_id", id).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
+			Msg("failed get news recommendations")
+
+		return nil, err
+	}
+
+	logger.Info().
+		Str("service", "usecase").
+		Str("event", "news_recommendations_fetched").
+		Uint64("news_id", id).
+		Int("count", len(newsList)).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
+		Msg("news recommendations fetched")
+
+	return newsList, nil
+}
+
 func (u *newsUsecase) Update(
 	n *entity.News,
 ) error {
@@ -297,4 +351,73 @@ func (u *newsUsecase) Delete(
 		Msg("news deleted")
 
 	return nil
+}
+
+func (u *newsUsecase) Search(
+	q string,
+	categoryID *uint64,
+	page int,
+	limit int,
+) (*domain.NewsSearchResponse, int64, error) {
+
+	start := time.Now()
+
+	items, total, err := u.esRepo.Search(
+		context.Background(),
+		q,
+		categoryID,
+		page,
+		limit,
+	)
+
+	if err != nil {
+
+		logger.Error(err).
+			Str("service", "usecase").
+			Str("event", "news_search_failed").
+			Str("query", q).
+			Int("page", page).
+			Int("limit", limit).
+			Int64(
+				"duration_ms",
+				time.Since(start).Milliseconds(),
+			).
+			Msg("failed search news")
+
+		return nil, 0, err
+	}
+
+	response := &domain.NewsSearchResponse{
+		Items:           items,
+		Recommendations: []entity.News{},
+	}
+
+	if len(items) > 0 {
+
+		recommendations, err := u.Recommend(
+			items[0].ID,
+			3,
+		)
+
+		if err == nil {
+			response.Recommendations = recommendations
+		}
+	}
+
+	logger.Info().
+		Str("service", "usecase").
+		Str("event", "news_search_completed").
+		Str("query", q).
+		Int64("total", total).
+		Dur(
+			"duration",
+			time.Since(start),
+		).
+		Int64(
+			"duration_ms",
+			time.Since(start).Milliseconds(),
+		).
+		Msg("news search completed")
+
+	return response, total, nil
 }
