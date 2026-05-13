@@ -114,11 +114,19 @@ content-hub/
 │   ├── api/
 │   │   └── main.go
 │   │
-│   └── consumer/
+│   ├── consumer/
+│   │   └── main.go
+│   │
+│   └── poller/
 │       └── main.go
 │
 ├── config/
 │   └── config.go
+│
+├── docker/
+│   └── mysql/
+│       └── init/
+│           └── init.sql
 │
 ├── docs/
 │   ├── docs.go
@@ -127,29 +135,14 @@ content-hub/
 │
 ├── internal/
 │   │
-│   ├── domain/
-│   │   ├── entity/
-│   │   │   ├── category.go
-│   │   │   ├── product.go
-│   │   │   ├── news.go
-│   │   │   └── outbox.go
-│   │   │
-│   │   ├── repository/
-│   │   │   ├── category.go
-│   │   │   ├── product.go
-│   │   │   ├── news.go
-│   │   │   └── outbox.go
-│   │   │
-│   │   └── usecase/
-│   │       ├── product.go
-│   │       └── news.go
-│   │
 │   ├── delivery/
 │   │   └── http/
+│   │       ├── router.go
+│   │       │
 │   │       ├── handler/
 │   │       │   ├── health.go
-│   │       │   ├── product.go
-│   │       │   └── news.go
+│   │       │   ├── news.go
+│   │       │   └── product.go
 │   │       │
 │   │       ├── middleware/
 │   │       │   ├── logger.go
@@ -157,65 +150,83 @@ content-hub/
 │   │       │   └── request_id.go
 │   │       │
 │   │       ├── request/
-│   │       │   ├── product.go
-│   │       │   └── news.go
+│   │       │   ├── news.go
+│   │       │   └── product.go
 │   │       │
-│   │       ├── response/
-│   │       │   └── response.go
-│   │       │
-│   │       └── router.go
+│   │       └── response/
+│   │           ├── json.go
+│   │           ├── response.go
+│   │           └── search.go
+│   │
+│   ├── domain/
+│   │   ├── entity/
+│   │   │   ├── news.go
+│   │   │   ├── outbox.go
+│   │   │   └── product.go
+│   │   │
+│   │   ├── repository/
+│   │   │   ├── news.go
+│   │   │   ├── outbox.go
+│   │   │   └── product.go
+│   │   │
+│   │   └── usecase/
+│   │       ├── news.go
+│   │       └── product.go
 │   │
 │   ├── helper/
 │   │   ├── pagination.go
-│   │   ├── parser.go
+│   │   ├── string.go
 │   │   └── validation.go
 │   │
 │   ├── infrastructure/
-│   │   ├── mysql/
-│   │   │   └── db.go
-│   │   │
 │   │   ├── elasticsearch/
 │   │   │   └── client.go
 │   │   │
+│   │   ├── mysql/
+│   │   │   └── db.go
+│   │   │
 │   │   └── rabbitmq/
 │   │       ├── connection.go
+│   │       ├── consumer.go
 │   │       ├── publisher.go
-│   │       └── consumer.go
-│   │
-│   ├── repository/
-│   │   ├── mysql/
-│   │   │   ├── category.go
-│   │   │   ├── product.go
-│   │   │   ├── news.go
-│   │   │   └── outbox.go
-│   │   │
-│   │   └── elasticsearch/
-│   │       ├── product.go
-│   │       └── news.go
-│   │
-│   ├── usecase/
-│   │   ├── product.go
-│   │   └── news.go
+│   │       ├── retry.go
+│   │       └── topology.go
 │   │
 │   ├── logger/
 │   │   └── logger.go
 │   │
-│   └── outbox/
-│       └── poller.go
+│   ├── outbox/
+│   │   └── poller.go
+│   │
+│   ├── repository/
+│   │   ├── elasticsearch/
+│   │   │   ├── news.go
+│   │   │   └── product.go
+│   │   │
+│   │   └── mysql/
+│   │       ├── news.go
+│   │       ├── outbox.go
+│   │       └── product.go
+│   │
+│   └── usecase/
+│       ├── news.go
+│       └── product.go
 │
-├── migrations/
-│   ├── 001_create_categories.sql
-│   ├── 002_create_products.sql
-│   ├── 003_create_news.sql
-│   └── 004_create_outbox_events.sql
+├── postman/
+│   └── content-hub.postman_collection.json
 │
-├── Dockerfile
+├── screenshoot/
+│
+├── .env
 ├── docker-compose.yml
-├── .env.example
+├── Dockerfile
+├── filebeat.yml
 ├── go.mod
-└── README.md
+├── go.sum
+├── readme.md
+├── structure.txt
+└── todo.txt
 ```
-
 ---
 
 ## System Architecture
