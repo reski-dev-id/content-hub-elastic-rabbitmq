@@ -47,7 +47,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"category_id\": 1,\n    \"title\": \"PlayStation 5 Pro\",\n    \"slug\": \"playstation-5-pro\",\n    \"description\": \"Console gaming terbaru dari Sony\",\n    \"price\": 14500000,\n    \"status\": \"active\"\n}",
+              "raw": "{\n  \"category_id\": 2,\n  \"title\": \"MacBook Pro M4\",\n  \"slug\": \"macbook-pro-m4\",\n  \"description\": \"Apple laptop with M4 chip\",\n  \"price\": 35000000,\n  \"status\": \"active\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -103,6 +103,114 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/v1/products/search?q=iphone",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "v1",
+                "products",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "iphone"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "create-similiar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category_id\": 1,\n  \"title\": \"iPhone 15\",\n  \"slug\": \"iphone-15\",\n  \"description\": \"Apple smartphone generation 15\",\n  \"price\": 18000000,\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/v1/products",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "v1",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/v1/products",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "v1",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search-Typo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/v1/products/search?q=samsng",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "v1",
+                "products",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "samsng"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -121,7 +229,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"category_id\": 6,\n    \"title\": \"OpenAI Umumkan GPT Terbaru\",\n    \"slug\": \"openai-umumkan-gpt-terbaru\",\n    \"content\": \"Model terbaru meningkatkan reasoning dan speed.\",\n    \"author\": \"Reski\",\n    \"status\": \"published\"\n}",
+              "raw": "{\n  \"category_id\": 7,\n  \"title\": \"AI Industry Growing Rapidly\",\n  \"slug\": \"ai-industry-growing-rapidly\",\n  \"content\": \"Artificial intelligence adoption continues increasing worldwide.\",\n  \"author\": \"Reski\",\n  \"status\": \"published\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -198,6 +306,61 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/v1/news",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "v1",
+                "news"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search-Typo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/v1/news/search?q=aplpe",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "v1",
+                "news",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "aplpe"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
         }
       ]
     },
@@ -221,64 +384,52 @@
           "response": []
         },
         {
-          "name": "Indexing-Product",
+          "name": "Index Product",
           "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"mappings\": {\n      \"properties\": {\n        \"id\":          { \"type\": \"long\" },\n        \"title\":       { \"type\": \"text\" },\n        \"description\": { \"type\": \"text\" },\n        \"category_id\": { \"type\": \"long\" },\n        \"price\":       { \"type\": \"float\" },\n        \"status\":      { \"type\": \"keyword\" }\n      }\n    }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "method": "GET",
+            "header": [],
             "url": {
-              "raw": "localhost:9200/products",
+              "raw": "http://localhost:9200/products/_search?pretty",
+              "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "9200",
               "path": [
-                "products"
+                "products",
+                "_search"
+              ],
+              "query": [
+                {
+                  "key": "pretty",
+                  "value": null
+                }
               ]
             }
           },
           "response": []
         },
         {
-          "name": "Indexing-News",
+          "name": "News Index",
           "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"mappings\": {\n      \"properties\": {\n        \"id\":           { \"type\": \"long\" },\n        \"title\":        { \"type\": \"text\" },\n        \"content\":      { \"type\": \"text\" },\n        \"category_id\":  { \"type\": \"long\" },\n        \"author\":       { \"type\": \"keyword\" },\n        \"status\":       { \"type\": \"keyword\" }\n      }\n    }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "method": "GET",
+            "header": [],
             "url": {
-              "raw": "localhost:9200/news",
+              "raw": "http://localhost:9200/news/_search?pretty",
+              "protocol": "http",
               "host": [
                 "localhost"
               ],
               "port": "9200",
               "path": [
-                "news"
+                "news",
+                "_search"
+              ],
+              "query": [
+                {
+                  "key": "pretty",
+                  "value": null
+                }
               ]
             }
           },
@@ -393,8 +544,43 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "filebeat",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
         }
       ]
+    },
+    {
+      "name": "Healt",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/health",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "New Request",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
     }
   ]
 }
